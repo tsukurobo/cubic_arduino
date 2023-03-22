@@ -1,4 +1,4 @@
-#include "cubic_arduino_ver2.5.h"
+#include "cubic_arduino_ver2.6.h"
 
 SPISettings Cubic_SPISettings = SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0);
 int16_t DC_motor::buf[DC_MOTOR_NUM+SOL_SUB_NUM];
@@ -28,10 +28,10 @@ void DC_motor::send(void){
 
     SPI.beginTransaction(Cubic_SPISettings);
     // スレーブ側で割り込み処理を検知させる
-    digitalWrite(SS_DC_MOTOR,LOW);
-    delayMicroseconds(SPI_DELAY);
-    digitalWrite(SS_DC_MOTOR,HIGH);
-    delayMicroseconds(SPI_DELAY);
+    //digitalWrite(SS_DC_MOTOR,LOW);
+    //delayMicroseconds(SPI_DELAY);
+    //digitalWrite(SS_DC_MOTOR,HIGH);
+    //delayMicroseconds(SPI_DELAY);
     // データの送信
     for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
         digitalWrite(SS_DC_MOTOR,LOW);
@@ -111,10 +111,10 @@ int16_t Inc_enc::get(uint8_t num){
 void Inc_enc::receive(void){
     SPI.beginTransaction(Cubic_SPISettings);
     // スレーブ側で割り込み処理を検知させる
-    digitalWrite(SS_INC_ENC,LOW);
-    delayMicroseconds(SPI_DELAY);
-    digitalWrite(SS_INC_ENC,HIGH);
-    delayMicroseconds(SPI_DELAY);
+    //digitalWrite(SS_INC_ENC,LOW);
+    //delayMicroseconds(SPI_DELAY);
+    //digitalWrite(SS_INC_ENC,HIGH);
+    //delayMicroseconds(SPI_DELAY);
     // データを受信
     for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES; i++) {
         digitalWrite(SS_INC_ENC,LOW);
@@ -180,11 +180,7 @@ uint16_t Abs_enc::remove_parity_bit(uint16_t enc_val) {
 
 void Abs_enc::receive(void){
     SPI.beginTransaction(Cubic_SPISettings);
-    // スレーブ側で割り込み処理を検知させる
-    digitalWrite(SS_ABS_ENC,LOW);
-    delayMicroseconds(SPI_DELAY);
-    digitalWrite(SS_ABS_ENC,HIGH);
-    delayMicroseconds(SPI_DELAY);
+    
     // データを受信
     for (int i = 0; i < ABS_ENC_NUM*ABS_ENC_BYTES; i++) {
         digitalWrite(SS_ABS_ENC,LOW);
@@ -210,6 +206,10 @@ void Cubic::begin(){
     // Cubicの動作開始
     pinMode(ENABLE,OUTPUT);
     digitalWrite(ENABLE,HIGH);
+    pinMode(ENABLE_EX0, OUTPUT);
+    digitalWrite(ENABLE_EX0, HIGH);
+    pinMode(ENABLE_EX1, OUTPUT);
+    digitalWrite(ENABLE_EX1, HIGH);
     // DCモータの初期化
     DC_motor::begin();
     // インクリメントエンコーダの初期化

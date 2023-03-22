@@ -1,4 +1,4 @@
-#include "cubic_arduino_ver2.5.h"
+#include "cubic_arduino_ver2.6.h"
 
 /*モーターの利用*/
 // put関数で各モータのduty比指定，duty比の符号反転で逆回転
@@ -24,7 +24,7 @@ void setup() {
 int duty = 0;
 //int16_t duty[] = {-120, -153, -130};
 //int16_t duty[] = {220, 200, 150};
-bool state = 0;
+bool state = 1;
 
 void loop() {
   // シリアル入力でdutyまたはstateの値を指定
@@ -55,7 +55,7 @@ void loop() {
     int enc_diff = Inc_enc::get(i);
     Serial.print(enc_diff); Serial.print(" ");
   }
-  Serial.print(" ");
+  //Serial.print(" ");
 
   // すべてのアブソリュートエンコーダの値を表示
   Abs_enc::print();

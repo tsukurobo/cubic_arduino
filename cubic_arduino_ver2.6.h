@@ -3,21 +3,23 @@
 #include "Arduino.h"
 #include <SPI.h>
 
-// ENABLEをHIGHにすることによって動作開始
+// 各種ENABLEをHIGHにすることによって動作開始
 #define ENABLE 7
+#define ENABLE_EX0 2
+#define ENABLE_EX1 3
 
 // SPI通信に用いるピン
 #define MISO 12
-#define MOSI 11 
-#define SCK 13 
+#define MOSI 11
+#define SCK 13
 #define SS_DC_MOTOR 15  // DCモータ(ソレノイド)のSS
-#define SS_INC_ENC 21   // インクリメントエンコーダのSS
-#define SS_ABS_ENC 14   // アブソリュートエンコーダのSS
-#define SS_ADC 20       // ADCのSS
+#define SS_INC_ENC 20  // インクリメントエンコーダのSS
+#define SS_ABS_ENC 1    // アブソリュートエンコーダのSS
+#define SS_ADC 21       // ADCのSS
 
 // スレーブ側で割り込み処理を開始するためのSSの変化におけるディレイ(us)
 #define SPI_DELAY 1
-#define SPI_FREQ 400000
+#define SPI_FREQ 4000000
 
 // モータ，エンコーダの数
 #define DC_MOTOR_NUM 8
