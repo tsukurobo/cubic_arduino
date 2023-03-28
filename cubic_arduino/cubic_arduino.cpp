@@ -1,4 +1,4 @@
-#include "cubic_arduino_ver2.6.h"
+#include "cubic_arduino.h"
 
 SPISettings Cubic_SPISettings = SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0);
 int16_t DC_motor::buf[DC_MOTOR_NUM+SOL_SUB_NUM];
@@ -11,13 +11,25 @@ unsigned long Solenoid::time_prev[SOL_SUB_NUM];
 void DC_motor::begin(){
     pinMode(SS_DC_MOTOR,OUTPUT);
     digitalWrite(SS_DC_MOTOR,HIGH);
+    pinMode(SS_DC_MOTOR_MISO,OUTPUT);
+    digitalWrite(SS_DC_MOTOR_MISO,HIGH);
+
+    //マザーボード上のRP2040とモータドライバの各マイコン間でのSPI通信も可能
+    pinMode(SS_DC_MOTOR_SS_1,OUTPUT);
+    pinMode(SS_DC_MOTOR_SS_2,OUTPUT);
+    pinMode(SS_DC_MOTOR_SS_3,OUTPUT);
+    pinMode(SS_DC_MOTOR_SS_4,OUTPUT);
+    digitalWrite(SS_DC_MOTOR_SS_1,HIGH);
+    digitalWrite(SS_DC_MOTOR_SS_2,HIGH);
+    digitalWrite(SS_DC_MOTOR_SS_3,HIGH);
+    digitalWrite(SS_DC_MOTOR_SS_4,HIGH);
 }
 
 void DC_motor::put(uint8_t num, int16_t duty, uint16_t duty_max){
     // 想定外の入力が来たら何もしない
     if(duty_max > DUTY_SPI_MAX) return;
     if(abs(duty) > duty_max) return; 
-    if(num >= DC_MOTOR_NUM) return;
+    if(num >= DC_MOTOR_NUM + SOL_SUB_NUM) return;
 
     // duty値を代入
     buf[num] = (int16_t)((float)duty/(float)duty_max * (float)DUTY_SPI_MAX);
@@ -25,18 +37,33 @@ void DC_motor::put(uint8_t num, int16_t duty, uint16_t duty_max){
 
 void DC_motor::send(void){
     uint8_t *l_buf = (uint8_t*)buf;
-
+    uint8_t sign_buf = 0;
     SPI.beginTransaction(Cubic_SPISettings);
-    // スレーブ側で割り込み処理を検知させる
-    //digitalWrite(SS_DC_MOTOR,LOW);
-    //delayMicroseconds(SPI_DELAY);
-    //digitalWrite(SS_DC_MOTOR,HIGH);
-    //delayMicroseconds(SPI_DELAY);
-    // データの送信
-    for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
-        digitalWrite(SS_DC_MOTOR,LOW);
-        SPI.transfer(l_buf[i]);
-        digitalWrite(SS_DC_MOTOR,HIGH);
+    
+    // 送信要求を受け取る
+    digitalWrite(SS_DC_MOTOR_MISO,LOW);
+    digitalWrite(SS_DC_MOTOR,LOW);
+    sign_buf = SPI.transfer(0x00);
+    digitalWrite(SS_DC_MOTOR_MISO,HIGH);
+    digitalWrite(SS_DC_MOTOR,HIGH);
+    //Serial.println(sign_buf,BIN);
+    delayMicroseconds(1);
+    
+    // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
+    if(sign_buf == 0xFF){
+        for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
+            //digitalWrite(SS_DC_MOTOR_MISO,LOW);
+            digitalWrite(SS_DC_MOTOR,LOW);
+            //delayMicroseconds(1);
+            SPI.transfer(l_buf[i]);
+            //delayMicroseconds(1);
+            digitalWrite(SS_DC_MOTOR,HIGH);
+            //digitalWrite(SS_DC_MOTOR_MISO,HIGH);
+            
+            //Serial.print(l_buf[i],BIN);
+            //Serial.print(",");
+        }
+        //Serial.println();
     }
     SPI.endTransaction();
 }
@@ -110,11 +137,6 @@ int16_t Inc_enc::get(uint8_t num){
 
 void Inc_enc::receive(void){
     SPI.beginTransaction(Cubic_SPISettings);
-    // スレーブ側で割り込み処理を検知させる
-    //digitalWrite(SS_INC_ENC,LOW);
-    //delayMicroseconds(SPI_DELAY);
-    //digitalWrite(SS_INC_ENC,HIGH);
-    //delayMicroseconds(SPI_DELAY);
     // データを受信
     for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES; i++) {
         digitalWrite(SS_INC_ENC,LOW);
