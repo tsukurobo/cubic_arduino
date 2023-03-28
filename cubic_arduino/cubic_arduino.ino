@@ -1,4 +1,4 @@
-#include "cubic_arduino_ver2.6.h"
+#include "cubic_arduino.h"
 
 /*モーターの利用*/
 // put関数で各モータのduty比指定，duty比の符号反転で逆回転
@@ -55,17 +55,17 @@ void loop() {
     int enc_diff = Inc_enc::get(i);
     Serial.print(enc_diff); Serial.print(" ");
   }
-  //Serial.print(" ");
+  Serial.print(" ");
 
   // すべてのアブソリュートエンコーダの値を表示
   Abs_enc::print();
 
   for (int i = 0; i < 4; i++) {
     // 各ソレノイドの状態を格納
-    Solenoid::put(i, state);
+    // Solenoid::put(i, state);
   }
   // すべてのソレノイドの状態を表示
-  Solenoid::print();
+  //Solenoid::print();
 
   // すべてのモータのDuty(最大32766)を表示
   DC_motor::print(true);

@@ -13,9 +13,14 @@
 #define MOSI 11
 #define SCK 13
 #define SS_DC_MOTOR 15  // DCモータ(ソレノイド)のSS
+#define SS_DC_MOTOR_MISO 2 //DCモーターで、スレーブからマスターへデータを送る時LOWにしないといけないピン
 #define SS_INC_ENC 20  // インクリメントエンコーダのSS
 #define SS_ABS_ENC 1    // アブソリュートエンコーダのSS
 #define SS_ADC 21       // ADCのSS
+#define SS_DC_MOTOR_SS_1 16//マザーボードのRP2040をマスターとして各モータードライバ基盤に配置できるスレーブのSS
+#define SS_DC_MOTOR_SS_2 17
+#define SS_DC_MOTOR_SS_3 18
+#define SS_DC_MOTOR_SS_4 19
 
 // スレーブ側で割り込み処理を開始するためのSSの変化におけるディレイ(us)
 #define SPI_DELAY 1
