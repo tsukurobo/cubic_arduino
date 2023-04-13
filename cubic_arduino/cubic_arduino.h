@@ -86,6 +86,7 @@ class Solenoid {
 
         // すべてのソレノイドの状態をSerial.print()で表示する関数
         static void print(bool new_line = false);
+        
     private:
         // 状態を変更した時刻を保存する配列
         static unsigned long time_prev[SOL_SUB_NUM];
@@ -107,11 +108,15 @@ class Inc_enc{
         // すべてのエンコーダの累積値をSPI通信で受信する関数
         static void receive(void);
 
+        // すべてのエンコーダの累積値を0にする関数
+        static void reset(void);
+
         // すべてのエンコーダの累積値をSerial.print()で表示する関数
         static void print(bool new_line = false);
 
         // すべてのエンコーダの差分値をSerial.print()で表示する関数
         static void print_diff(bool new_line = false);
+
     private:
         // RP2040からの受信データを格納する配列
         static uint8_t buf[INC_ENC_NUM*INC_ENC_BYTES];
@@ -137,6 +142,7 @@ class Abs_enc{
 
         // すべてのエンコーダの値をSerial.print()で表示する関数
         static void print(bool new_line = false);
+
     private:
         // RP2040からの受信データを格納する配列
         static uint8_t buf[ABS_ENC_NUM*ABS_ENC_BYTES];

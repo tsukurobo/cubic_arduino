@@ -4,8 +4,11 @@
 // put関数で各モータのduty比指定，duty比の符号反転で逆回転
 // Dutyの最大値はデフォルトで1000
 
-/*エンコーダの利用*/
-// get関数で各エンコーダの値を取得．Inc_encは1ms辺りの変化量，Abs_encは絶対位置[0, 16383]
+/*インクリメントエンコーダの利用*/
+// get関数で各エンコーダの累積値を取得．get_diff関数で各エンコーダの差分値を取得．
+
+/*アブソリュートエンコーダの利用*/
+// get関数で各エンコーダの絶対位置[0, 16383]を取得．
 
 /*ソレノイドの利用*/
 // put関数で各ソレノイドの状態指定
@@ -21,55 +24,39 @@ void setup() {
   Serial.begin(115200);
 }
 
-int duty = 0;
-//int16_t duty[] = {-120, -153, -130};
-//int16_t duty[] = {220, 200, 150};
-bool state = 1;
-
 void loop() {
-  // シリアル入力でdutyまたはstateの値を指定
+  // シリアル入力で動作モードを指定
   if (Serial.available() > 0) {
-    ///*
-    uint8_t i = Serial.readStringUntil(':').toInt();
-    duty = Serial.readStringUntil('\n').toInt();
-    DC_motor::put(i, duty);
-    //*/
-    //state = Serial.readStringUntil('\n').toInt();
-    /*
-    String s = Serial.readStringUntil('\n');
-    if (s == "r") {
-      for (int i = 0; i < 3; i++) duty[i] *= -1;
-      DC_motor::put(0, duty[0]); DC_motor::put(2, duty[1]); DC_motor::put(6, duty[2]);
-    }    
-    else {
-      DC_motor::put(0, 0); DC_motor::put(2, 0); DC_motor::put(6, 0);
+    char mode = Serial.read();
+
+    // モータのDutyを指定（例："m1:100"）
+    if (mode == 'm') {
+      uint8_t i = Serial.readStringUntil(':').toInt();
+      int duty = Serial.readStringUntil('\n').toInt();
+      DC_motor::put(i, duty);
     }
-    */
+    // ソレノイドの状態を指定（例："s2:0"）
+    else if (mode == 's') {
+      uint8_t i = Serial.readStringUntil(':').toInt();
+      bool state = Serial.readStringUntil('\n').toInt();
+      Solenoid::put(i, state);
+    }
+    // インクリメントエンコーダの累積値をリセット
+    else if (mode == 'r') {
+      Inc_enc::reset();
+    }
   }
 
-  for (int i = 0; i < 8; i++) {
-    // i番モータにdutyを指定
-    //DC_motor::put(i, duty);
-
-    // i番インクリメントエンコーダの値の差分を取得し表示
-    // int enc_diff = Inc_enc::get(i);
-    // Serial.print(enc_diff); Serial.print(" ");
-  }
-  // Serial.print(" ");
+  // すべてのインクリメントエンコーダの累積値を表示
   Inc_enc::print();
+
+  // すべてのインクリメントエンコーダの差分値を表示
   Inc_enc::print_diff();
 
   // すべてのアブソリュートエンコーダの値を表示
   Abs_enc::print();
 
-  for (int i = 0; i < 4; i++) {
-    // 各ソレノイドの状態を格納
-    // Solenoid::put(i, state);
-  }
-  // すべてのソレノイドの状態を表示
-  //Solenoid::print();
-
-  // すべてのモータのDuty(最大32766)を表示
+  // すべてのDCモータのDutyを表示
   DC_motor::print(true);
 
   // データの送受信を行う

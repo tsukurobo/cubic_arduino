@@ -125,6 +125,9 @@ void Solenoid::print(bool new_line) {
 void Inc_enc::begin(void){
     pinMode(SS_INC_ENC, OUTPUT); 
     digitalWrite(SS_INC_ENC, HIGH);
+
+    pinMode(INC_ENC_RESET, OUTPUT);
+    digitalWrite(INC_ENC_RESET, HIGH);
 }
 
 int32_t Inc_enc::get(uint8_t num){
@@ -161,6 +164,12 @@ void Inc_enc::receive(void){
         digitalWrite(SS_INC_ENC,HIGH);
     }
     SPI.endTransaction();
+}
+
+void Inc_enc::reset(void){
+    digitalWrite(INC_ENC_RESET, LOW);
+    delayMicroseconds(1);
+    digitalWrite(INC_ENC_RESET, HIGH);
 }
 
 void Inc_enc::print(bool new_line){
