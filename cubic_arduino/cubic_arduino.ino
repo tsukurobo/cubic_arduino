@@ -52,10 +52,12 @@ void loop() {
     //DC_motor::put(i, duty);
 
     // i番インクリメントエンコーダの値の差分を取得し表示
-    int enc_diff = Inc_enc::get(i);
-    Serial.print(enc_diff); Serial.print(" ");
+    // int enc_diff = Inc_enc::get(i);
+    // Serial.print(enc_diff); Serial.print(" ");
   }
-  Serial.print(" ");
+  // Serial.print(" ");
+  Inc_enc::print();
+  Inc_enc::print_diff();
 
   // すべてのアブソリュートエンコーダの値を表示
   Abs_enc::print();
