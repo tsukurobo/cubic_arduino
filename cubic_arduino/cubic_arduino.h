@@ -52,6 +52,9 @@
 // ソレノイドの出力を切り替える最小時間(ms)
 #define SOL_TIME_MIN 10
 
+using nano33BLE_digitalWriteFast::digitalWriteFast;
+using nano33BLE_digitalWriteFast::Pin;
+
 class DC_motor {
     public:
         // 初期化する関数

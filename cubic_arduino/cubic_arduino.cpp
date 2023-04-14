@@ -11,25 +11,25 @@ int32_t Inc_enc::val_prev[INC_ENC_NUM];
 
 void DC_motor::begin(){
     pinMode(SS_DC_MOTOR,OUTPUT);
-    digitalWrite(SS_DC_MOTOR,HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
     pinMode(SS_DC_MOTOR_MISO,OUTPUT);
-    digitalWrite(SS_DC_MOTOR_MISO,HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
 
     //マザーボード上のRP2040とモータドライバの各マイコン間でのSPI通信も可能
     pinMode(SS_DC_MOTOR_SS_1,OUTPUT);
     pinMode(SS_DC_MOTOR_SS_2,OUTPUT);
     pinMode(SS_DC_MOTOR_SS_3,OUTPUT);
     pinMode(SS_DC_MOTOR_SS_4,OUTPUT);
-    digitalWrite(SS_DC_MOTOR_SS_1,HIGH);
-    digitalWrite(SS_DC_MOTOR_SS_2,HIGH);
-    digitalWrite(SS_DC_MOTOR_SS_3,HIGH);
-    digitalWrite(SS_DC_MOTOR_SS_4,HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_SS_1),HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_SS_2),HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_SS_3),HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_SS_4),HIGH);
 }
 
 void DC_motor::put(uint8_t num, int16_t duty, uint16_t duty_max){
     // 想定外の入力が来たら何もしない
     if(duty_max > DUTY_SPI_MAX) return;
-    if(abs(duty) > duty_max) return; 
+    if(abs(duty) > duty_max) return;
     if(num >= DC_MOTOR_NUM + SOL_SUB_NUM) return;
 
     // duty値を代入
@@ -40,27 +40,27 @@ void DC_motor::send(void){
     uint8_t *l_buf = (uint8_t*)buf;
     uint8_t sign_buf = 0;
     SPI.beginTransaction(Cubic_SPISettings);
-    
+
     // 送信要求を受け取る
-    digitalWrite(SS_DC_MOTOR_MISO,LOW);
-    digitalWrite(SS_DC_MOTOR,LOW);
+    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),LOW);
+    digitalWriteFast(Pin(SS_DC_MOTOR),LOW);
     sign_buf = SPI.transfer(0x00);
-    digitalWrite(SS_DC_MOTOR_MISO,HIGH);
-    digitalWrite(SS_DC_MOTOR,HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
+    digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
     //Serial.println(sign_buf,BIN);
     delayMicroseconds(1);
-    
+
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
     if(sign_buf == 0xFF){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
-            //digitalWrite(SS_DC_MOTOR_MISO,LOW);
-            digitalWrite(SS_DC_MOTOR,LOW);
+            //digitalWriteFast(Pin(SS_DC_MOTOR_MISO),LOW);
+            digitalWriteFast(Pin(SS_DC_MOTOR),LOW);
             //delayMicroseconds(1);
             SPI.transfer(l_buf[i]);
             //delayMicroseconds(1);
-            digitalWrite(SS_DC_MOTOR,HIGH);
-            //digitalWrite(SS_DC_MOTOR_MISO,HIGH);
-            
+            digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
+            //digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
+
             //Serial.print(l_buf[i],BIN);
             //Serial.print(",");
         }
@@ -123,11 +123,11 @@ void Solenoid::print(bool new_line) {
 
 
 void Inc_enc::begin(void){
-    pinMode(SS_INC_ENC, OUTPUT); 
-    digitalWrite(SS_INC_ENC, HIGH);
+    pinMode(SS_INC_ENC, OUTPUT);
+    digitalWriteFast(Pin(SS_INC_ENC), HIGH);
 
     pinMode(INC_ENC_RESET, OUTPUT);
-    digitalWrite(INC_ENC_RESET, HIGH);
+    digitalWriteFast(Pin(INC_ENC_RESET), HIGH);
 }
 
 int32_t Inc_enc::get(uint8_t num){
@@ -159,17 +159,17 @@ void Inc_enc::receive(void){
     SPI.beginTransaction(Cubic_SPISettings);
     // データを受信
     for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES; i++) {
-        digitalWrite(SS_INC_ENC,LOW);
+        digitalWriteFast(Pin(SS_INC_ENC),LOW);
         buf[i] = SPI.transfer(0x88);
-        digitalWrite(SS_INC_ENC,HIGH);
+        digitalWriteFast(Pin(SS_INC_ENC),HIGH);
     }
     SPI.endTransaction();
 }
 
 void Inc_enc::reset(void){
-    digitalWrite(INC_ENC_RESET, LOW);
+    digitalWriteFast(Pin(INC_ENC_RESET), LOW);
     delayMicroseconds(1);
-    digitalWrite(INC_ENC_RESET, HIGH);
+    digitalWriteFast(Pin(INC_ENC_RESET), HIGH);
 }
 
 void Inc_enc::print(bool new_line){
@@ -196,20 +196,20 @@ void Inc_enc::print_diff(bool new_line){
 
 
 void Abs_enc::begin(void){
-    pinMode(SS_ABS_ENC, OUTPUT); 
-    digitalWrite(SS_ABS_ENC, HIGH);
+    pinMode(SS_ABS_ENC, OUTPUT);
+    digitalWriteFast(Pin(SS_ABS_ENC), HIGH);
 }
 
 uint16_t Abs_enc::get(uint8_t num){
-    if(num >= ABS_ENC_NUM) return ABS_ENC_ERR;    
-    
+    if(num >= ABS_ENC_NUM) return ABS_ENC_ERR;
+
     uint16_t ret = 0;
     ret |= buf[num*ABS_ENC_BYTES];
     ret |= buf[num*ABS_ENC_BYTES+1] << 8;
 
     // RP2040で正しく読めてない場合
     if(ret == ABS_ENC_ERR_RP2040) return ret;
-    
+
     if(!(parity_check(ret))) {
         // Arduinoで正しく読めてない場合
         return ABS_ENC_ERR;
@@ -225,7 +225,7 @@ bool Abs_enc::parity_check(uint16_t enc_val) {
     for (int i = 0; i < 16; i++) {
         bit[i] = (enc_val >> i) & 1;
     }
-    
+
     if (bit[15] == !(bit[13] ^ bit[11] ^ bit[9] ^ bit[7] ^ bit[5] ^ bit[3] ^ bit[1]) &&
         bit[14] == !(bit[12] ^ bit[10] ^ bit[8] ^ bit[6] ^ bit[4] ^ bit[2] ^ bit[0])) {
         return true;
@@ -239,12 +239,12 @@ uint16_t Abs_enc::remove_parity_bit(uint16_t enc_val) {
 
 void Abs_enc::receive(void){
     SPI.beginTransaction(Cubic_SPISettings);
-    
+
     // データを受信
     for (int i = 0; i < ABS_ENC_NUM*ABS_ENC_BYTES; i++) {
-        digitalWrite(SS_ABS_ENC,LOW);
+        digitalWriteFast(Pin(SS_ABS_ENC),LOW);
         buf[i] = SPI.transfer(0x88);
-        digitalWrite(SS_ABS_ENC,HIGH);
+        digitalWriteFast(Pin(SS_ABS_ENC),HIGH);
     }
     SPI.endTransaction();
 }
@@ -264,11 +264,11 @@ void Abs_enc::print(bool new_line) {
 void Cubic::begin(){
     // Cubicの動作開始
     pinMode(ENABLE,OUTPUT);
-    digitalWrite(ENABLE,HIGH);
+    digitalWriteFast(Pin(ENABLE),HIGH);
     pinMode(ENABLE_EX0, OUTPUT);
-    digitalWrite(ENABLE_EX0, HIGH);
+    digitalWriteFast(Pin(ENABLE_EX0), HIGH);
     pinMode(ENABLE_EX1, OUTPUT);
-    digitalWrite(ENABLE_EX1, HIGH);
+    digitalWriteFast(Pin(ENABLE_EX1), HIGH);
     // DCモータの初期化
     DC_motor::begin();
     // インクリメントエンコーダの初期化
@@ -282,7 +282,7 @@ void Cubic::begin(){
     pinMode(MISO, INPUT_PULLUP);
     // ADCのSSの初期化
     pinMode(SS_ADC,OUTPUT);
-    digitalWrite(SS_ADC,HIGH);
+    digitalWriteFast(Pin(SS_ADC),HIGH);
 
     Cubic::update();
     Cubic::update();
