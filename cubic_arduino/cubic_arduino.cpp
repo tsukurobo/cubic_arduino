@@ -6,6 +6,7 @@ uint8_t Inc_enc::buf[INC_ENC_NUM*INC_ENC_BYTES];
 uint8_t Abs_enc::buf[ABS_ENC_NUM*ABS_ENC_BYTES];
 
 unsigned long Solenoid::time_prev[SOL_SUB_NUM];
+int32_t Inc_enc::val_prev[INC_ENC_NUM];
 
 
 void DC_motor::begin(){
@@ -124,18 +125,37 @@ void Solenoid::print(bool new_line) {
 void Inc_enc::begin(void){
     pinMode(SS_INC_ENC, OUTPUT); 
     digitalWrite(SS_INC_ENC, HIGH);
+
+    pinMode(INC_ENC_RESET, OUTPUT);
+    digitalWrite(INC_ENC_RESET, HIGH);
 }
 
-int16_t Inc_enc::get(uint8_t num){
+int32_t Inc_enc::get(uint8_t num){
     if(num >= INC_ENC_NUM) return 1;
 
-    int16_t ret = 0;
+    int32_t ret = 0;
     ret |= buf[num*INC_ENC_BYTES];
     ret |= buf[num*INC_ENC_BYTES+1] << 8;
+    ret |= buf[num*INC_ENC_BYTES+2] << 16;
+    ret |= buf[num*INC_ENC_BYTES+3] << 24;
     return ret;
 }
 
+int16_t Inc_enc::get_diff(uint8_t num){
+    if(num >= INC_ENC_NUM) return 1;
+
+    return get(num) - val_prev[num];
+}
+
+void Inc_enc::save_val(void){
+    for (int i = 0; i < INC_ENC_NUM; i++) {
+        val_prev[i] = get(i);
+    }
+}
+
 void Inc_enc::receive(void){
+    save_val();
+
     SPI.beginTransaction(Cubic_SPISettings);
     // データを受信
     for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES; i++) {
@@ -146,9 +166,26 @@ void Inc_enc::receive(void){
     SPI.endTransaction();
 }
 
-void Inc_enc::print(bool new_line) {
+void Inc_enc::reset(void){
+    digitalWrite(INC_ENC_RESET, LOW);
+    delayMicroseconds(1);
+    digitalWrite(INC_ENC_RESET, HIGH);
+}
+
+void Inc_enc::print(bool new_line){
     for (int i = 0; i < INC_ENC_NUM; i++) {
         Serial.print(get(i));
+        Serial.print(" ");
+    }
+    if (new_line == true)
+        Serial.println();
+    else
+        Serial.print(" ");
+}
+
+void Inc_enc::print_diff(bool new_line){
+    for (int i = 0; i < INC_ENC_NUM; i++) {
+        Serial.print(get_diff(i));
         Serial.print(" ");
     }
     if (new_line == true)
