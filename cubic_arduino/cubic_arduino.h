@@ -2,6 +2,8 @@
 #define Cubic_h
 #include "Arduino.h"
 #include <SPI.h>
+#include "33BLE_digitalWriteFast.hpp"
+using namespace nano33BLE_digitalWriteFast;
 
 // 各種ENABLEをHIGHにすることによって動作開始
 #define ENABLE 7
