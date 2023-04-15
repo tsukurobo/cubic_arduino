@@ -60,5 +60,5 @@ void loop() {
   DC_motor::print(true);
 
   // データの送受信を行う
-  Cubic::update(1000);
+  Cubic::update(1);
 }
