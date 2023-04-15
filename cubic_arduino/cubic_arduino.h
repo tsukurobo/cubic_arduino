@@ -1,4 +1,4 @@
-#ifndef Cubic_h 
+#ifndef Cubic_h
 #define Cubic_h
 #include "Arduino.h"
 #include <SPI.h>
@@ -61,10 +61,10 @@ class DC_motor {
         // 指定したモータのDutyを格納する関数
         // 第1引数：モーター番号0~7，第2引数：duty，第3引数：最大duty
         static void put(uint8_t num, int16_t duty, uint16_t duty_max = 1000);
-        
+
         // すべてのモータのDutyをSPI通信で送信する関数
         static void send(void);
-        
+
         // すべてのモータのDutyの値をSerial.print()で表示する関数
         // ソレノイドの状態を出力している場合はSOLと表示される
         static void print(bool new_line = false);
@@ -82,13 +82,13 @@ class Solenoid {
         // 指定したソレノイドの状態を格納する関数
         // 第1引数：ソレノイド番号0~3，第2引数：状態
         static void put(uint8_t num, bool state);
-        
+
         // 指定したソレノイドの状態を取得する関数
         static int8_t get(uint8_t num);
 
         // すべてのソレノイドの状態をSerial.print()で表示する関数
         static void print(bool new_line = false);
-        
+
     private:
         // 状態を変更した時刻を保存する配列
         static unsigned long time_prev[SOL_SUB_NUM];
@@ -102,7 +102,7 @@ class Inc_enc{
         // エンコーダの累積値を取得する関数
         // 第1引数：エンコーダ番号
         static int32_t get(uint8_t num);
-        
+
         // エンコーダの差分値を取得する関数
         // 第1引数：エンコーダ番号
         static int16_t get_diff(uint8_t num);
@@ -160,9 +160,9 @@ class Cubic{
     public:
         // すべてのモータ，エンコーダの初期化をする関数
         static void begin(void);
-        
+
         // データの送受信をまとめて行う関数
-        static void update(void);
+        static void update(unsigned int us = 0);
 };
 
 #endif
