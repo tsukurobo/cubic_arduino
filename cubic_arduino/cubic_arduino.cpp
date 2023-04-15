@@ -289,8 +289,9 @@ void Cubic::begin(){
     Cubic::update();
 }
 
-void Cubic::update() {
+void Cubic::update(const unsigned int us) {
     DC_motor::send();
+    if(us > 0) delayMicroseconds(us);
     Abs_enc::receive();
     Inc_enc::receive();
 }
