@@ -24,7 +24,8 @@ float dt;
 
 void setup() {
   // すべてのモータ，エンコーダの初期化
-  Cubic::begin();
+  // 第1引数に最大許容電流を与える．
+  Cubic::begin(3.0);
   Serial.begin(115200);
 
   time_prev = micros();
@@ -66,6 +67,9 @@ void loop() {
 
   // すべてのDCモータのDutyを表示
   DC_motor::print();
+
+  // すべてのDCモータの電流値を表示
+  Adc::print(true);
 
   /*
   cnt++;
