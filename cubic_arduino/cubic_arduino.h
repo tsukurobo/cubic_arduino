@@ -25,6 +25,7 @@ using namespace nano33BLE_digitalWriteFast;
 #define SS_DC_MOTOR_SS_4 19
 
 #define SPI_FREQ 4000000
+#define ADC_SPI_FREQ 1000000
 
 // モータ，エンコーダの数
 #define DC_MOTOR_NUM 8
@@ -39,6 +40,11 @@ using namespace nano33BLE_digitalWriteFast;
 
 // SPI通信におけるDCモータのDutyの最大値
 #define DUTY_SPI_MAX 32766
+
+// 電流センサの取り得る最大電流値
+#define CURRENT_MAX 30.0
+// 電流センサの分解能(-2048 ~ 2048)
+#define CURRENT_RES 2048
 
 // アブソリュートエンコーダの取り得る最大値
 #define ABS_ENC_MAX 16383
@@ -158,16 +164,48 @@ class Abs_enc{
         static uint16_t remove_parity_bit(uint16_t);
 };
 
+class Adc {
+    public:
+        // 初期化する関数
+        static void begin(void);
+
+        // 電流値を取得する関数
+        static float get(uint8_t num);
+
+        // 電流値を受信する関数
+        static void receive(void);
+
+        // 各メインモータに対応した電流値を表示する関数
+        static void print(bool new_line = false);
+    
+    private:
+        // 各メインモータに対応した電流値を格納する配列
+        static float buf[DC_MOTOR_NUM];
+
+        // 各メインモータに対応したチャンネル番号を格納する配列
+        static const uint8_t ch[DC_MOTOR_NUM];
+
+        // 各メインモータに対応した電流値のバイアス項
+        static float bias[DC_MOTOR_NUM];
+
+        // 各メインモータに対応した電流値の前の値
+        static float buf_prev[DC_MOTOR_NUM];
+};
+
 class Cubic{
     public:
         // すべてのモータ，エンコーダの初期化をする関数
-        static void begin(void);
+        static void begin(float current_limit = 2.0);
 
         // データの送受信をまとめて行う関数
         static void update(unsigned int us = 2000);
     
     private:
+        // 1つ前のループの時刻
         static unsigned long time_prev;
+
+        // モータを止める電流の閾値
+        static float _current_limit;
 };
 
 #endif

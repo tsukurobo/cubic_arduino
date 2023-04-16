@@ -1,13 +1,21 @@
 #include "cubic_arduino.h"
 
 SPISettings Cubic_SPISettings = SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0);
+SPISettings ADC_SPISettings = SPISettings(ADC_SPI_FREQ, MSBFIRST, SPI_MODE0);
+
+const uint8_t Adc::ch[DC_MOTOR_NUM] = {7, 5, 6, 4, 3, 2, 0, 1};
+
 int16_t DC_motor::buf[DC_MOTOR_NUM+SOL_SUB_NUM];
 uint8_t Inc_enc::buf[INC_ENC_NUM*INC_ENC_BYTES];
 uint8_t Abs_enc::buf[ABS_ENC_NUM*ABS_ENC_BYTES];
+float Adc::buf[DC_MOTOR_NUM];
 
 unsigned long Solenoid::time_prev[SOL_SUB_NUM];
 int32_t Inc_enc::val_prev[INC_ENC_NUM];
 unsigned long Cubic::time_prev;
+float Adc::bias[DC_MOTOR_NUM];
+float Adc::buf_prev[DC_MOTOR_NUM];
+float Cubic::_current_limit;
 
 
 void DC_motor::begin(void){
@@ -48,7 +56,6 @@ void DC_motor::send(void){
     sign_buf = SPI.transfer(0x00);
     digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
     digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
-    //Serial.println(sign_buf,BIN);
     delayMicroseconds(1);
 
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
@@ -56,16 +63,9 @@ void DC_motor::send(void){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
             //digitalWriteFast(Pin(SS_DC_MOTOR_MISO),LOW);
             digitalWriteFast(Pin(SS_DC_MOTOR),LOW);
-            //delayMicroseconds(1);
             SPI.transfer(l_buf[i]);
-            //delayMicroseconds(1);
             digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
-            //digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
-
-            //Serial.print(l_buf[i],BIN);
-            //Serial.print(",");
         }
-        //Serial.println();
     }
     SPI.endTransaction();
 }
@@ -73,7 +73,6 @@ void DC_motor::send(void){
 void DC_motor::print(const bool new_line){
     for (int i = 0; i < DC_MOTOR_NUM+SOL_SUB_NUM; i++) {
         if (abs(buf[i]) == DUTY_SPI_MAX + 1 && i >= DC_MOTOR_NUM) {
-            //Serial.print(Solenoid::get(i-DC_MOTOR_NUM));
             Serial.print("SOL");
         }
         else {
@@ -262,7 +261,62 @@ void Abs_enc::print(const bool new_line) {
 }
 
 
-void Cubic::begin(){
+void Adc::begin(void) {
+    // ADCのSSの初期化
+    pinMode(SS_ADC,OUTPUT);
+    digitalWriteFast(Pin(SS_ADC),HIGH);
+    
+    // バイアス項を求める
+    const int vrfy_num = 10;
+    float temp[DC_MOTOR_NUM];
+    for(int i = 0; i < DC_MOTOR_NUM; i++) bias[i] = temp[i] = 0.0;
+    for(int i = 0; i < vrfy_num; i++) {
+        receive();
+        for(int j = 0; j < DC_MOTOR_NUM; j++) {
+            temp[j] += buf[j];
+        }
+    }
+    for(int i = 0; i < DC_MOTOR_NUM; i++) bias[i] = -temp[i] / vrfy_num;
+}
+
+float Adc::get(uint8_t num) {
+    if (num >= DC_MOTOR_NUM) return 0;
+    return buf[num];
+}
+
+void Adc::receive(void) {
+    SPI.beginTransaction(ADC_SPISettings);
+    for(int i = 0; i < DC_MOTOR_NUM; i++) {
+        byte channelDataH2 = (ch[i] >> 2) | 0x06;
+        byte channelDataL2 = ch[i] << 6;
+
+        digitalWriteFast(Pin(SS_ADC), LOW);
+        SPI.transfer(channelDataH2);                  // Start bit 1 + D2bit
+        byte highByte = SPI.transfer(channelDataL2);  // singleEnd D1,D0 bit
+        byte lowByte = SPI.transfer(0x00);            // dummy
+        digitalWriteFast(Pin(SS_ADC), HIGH);
+
+        int data = ((highByte & 0x0f) << 8) | lowByte;
+        float raw_val = (float)(data - CURRENT_RES)/CURRENT_RES * CURRENT_MAX + bias[i];
+        buf[i] = 0.1*raw_val + 0.9*buf_prev[i]; // ローパスフィルタ
+        buf_prev[i] = buf[i];
+    }
+    SPI.endTransaction();
+}
+
+void Adc::print(const bool new_line){
+    for (int i = 0; i < DC_MOTOR_NUM; i++) {
+        Serial.print(get(i));
+        Serial.print(" ");
+    }
+    if (new_line == true)
+        Serial.println();
+    else
+        Serial.print(" ");
+}
+
+
+void Cubic::begin(const float current_limit){
     // Cubicの動作開始
     pinMode(ENABLE,OUTPUT);
     digitalWriteFast(Pin(ENABLE),HIGH);
@@ -271,8 +325,15 @@ void Cubic::begin(){
     pinMode(ENABLE_EX1, OUTPUT);
     digitalWriteFast(Pin(ENABLE_EX1), HIGH);
 
+    // SPI通信セットアップ
+    SPI.begin();
+    pinMode(MISO, INPUT_PULLUP);
+
     // DCモータの初期化
     DC_motor::begin();
+
+    // ソレノイドの初期化
+    Solenoid::begin();
 
     // インクリメントエンコーダの初期化
     Inc_enc::begin();
@@ -280,16 +341,10 @@ void Cubic::begin(){
     // アブソリュートエンコーダの初期化
     Abs_enc::begin();
 
-    // ソレノイドの初期化
-    Solenoid::begin();
-
-    // SPI通信セットアップ
-    SPI.begin();
-    pinMode(MISO, INPUT_PULLUP);
-
-    // ADCのSSの初期化
-    pinMode(SS_ADC,OUTPUT);
-    digitalWriteFast(Pin(SS_ADC),HIGH);
+    // ADCの初期化
+    Adc::begin();
+    // 電流の許容値を設定
+    _current_limit = abs(current_limit);
 
     // ループ前の時刻を記録
     time_prev = micros();
@@ -300,6 +355,12 @@ void Cubic::begin(){
 }
 
 void Cubic::update(const unsigned int us) {
+    // ここに電流値によるチェックを入れる
+    for(int i = 0; i < DC_MOTOR_NUM; i++) {
+        if(abs(Adc::get(i)) > _current_limit) {
+            DC_motor::put(i, 0);
+        }
+    }
     DC_motor::send();
 
     unsigned long time_now = micros();
@@ -312,4 +373,5 @@ void Cubic::update(const unsigned int us) {
 
     Abs_enc::receive();
     Inc_enc::receive();
+    Adc::receive();
 }
