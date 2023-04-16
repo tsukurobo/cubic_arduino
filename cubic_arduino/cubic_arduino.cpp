@@ -299,15 +299,16 @@ void Cubic::begin(){
     Cubic::update();
 }
 
-void Cubic::update(const unsigned int ms) {
+void Cubic::update(const unsigned int us) {
     DC_motor::send();
 
-    unsigned long time_now = micros(), dt;
+    unsigned long time_now = micros();
+    unsigned int dt;
     if(time_now < time_prev) dt = time_now + MICROS_MAX - time_prev;
     else                     dt = time_now - time_prev;
     time_prev = time_now;
 
-    if(ms*1000 > dt) delayMicroseconds(ms*1000 - dt);
+    if(us > dt) delayMicroseconds((us - dt)*2); // なぜか2倍すると正しい周期になる
 
     Abs_enc::receive();
     Inc_enc::receive();

@@ -164,7 +164,7 @@ class Cubic{
         static void begin(void);
 
         // データの送受信をまとめて行う関数
-        static void update(unsigned int ms = 1);
+        static void update(unsigned int us = 2000);
     
     private:
         static unsigned long time_prev;

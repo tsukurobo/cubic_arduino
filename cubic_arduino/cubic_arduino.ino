@@ -20,6 +20,7 @@
 
 long cnt = 0;
 unsigned long time_prev, time_now;
+float dt;
 
 void setup() {
   // すべてのモータ，エンコーダの初期化
@@ -64,19 +65,19 @@ void loop() {
   Abs_enc::print();
 
   // すべてのDCモータのDutyを表示
-  DC_motor::print(true);
+  DC_motor::print();
 
   /*
   cnt++;
   if (cnt == 1000) {
     time_now = micros();
-    Serial.println((time_now - time_prev) / 1000.0);
+    dt = (time_now - time_prev) / 1000.0;
     time_prev = time_now;
     cnt = 0;
+    Serial.println(dt);
   }
-  else Serial.println();
   */
 
-  // データの送受信を行う
+  // データの送受信を行う(デフォルトは2ms周期)
   Cubic::update();
 }
