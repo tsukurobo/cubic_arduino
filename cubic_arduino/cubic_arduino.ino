@@ -18,14 +18,21 @@
 
 // 詳しくはヘッダファイル参照
 
+long cnt = 0;
+unsigned long time_prev, time_now;
+float dt;
+
 void setup() {
   // すべてのモータ，エンコーダの初期化
   Cubic::begin();
   Serial.begin(115200);
+
+  time_prev = micros();
 }
 
 void loop() {
   // シリアル入力で動作モードを指定
+  ///*
   if (Serial.available() > 0) {
     char mode = Serial.read();
 
@@ -46,6 +53,7 @@ void loop() {
       Inc_enc::reset();
     }
   }
+  //*/
 
   // すべてのインクリメントエンコーダの累積値を表示
   Inc_enc::print();
@@ -57,8 +65,19 @@ void loop() {
   Abs_enc::print();
 
   // すべてのDCモータのDutyを表示
-  DC_motor::print(true);
+  DC_motor::print();
 
-  // データの送受信を行う
-  Cubic::update(1000);
+  /*
+  cnt++;
+  if (cnt == 1000) {
+    time_now = micros();
+    dt = (time_now - time_prev) / 1000.0;
+    time_prev = time_now;
+    cnt = 0;
+    Serial.println(dt);
+  }
+  */
+
+  // データの送受信を行う(デフォルトは2ms周期)
+  Cubic::update();
 }

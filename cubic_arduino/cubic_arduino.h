@@ -52,6 +52,8 @@ using namespace nano33BLE_digitalWriteFast;
 
 // ソレノイドの出力を切り替える最小時間(ms)
 #define SOL_TIME_MIN 10
+// micros()で測れる最大時間
+#define MICROS_MAX 0xffffffff
 
 class DC_motor {
     public:
@@ -162,7 +164,10 @@ class Cubic{
         static void begin(void);
 
         // データの送受信をまとめて行う関数
-        static void update(unsigned int us = 0);
+        static void update(unsigned int us = 2000);
+    
+    private:
+        static unsigned long time_prev;
 };
 
 #endif

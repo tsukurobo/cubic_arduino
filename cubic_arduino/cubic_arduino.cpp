@@ -7,9 +7,10 @@ uint8_t Abs_enc::buf[ABS_ENC_NUM*ABS_ENC_BYTES];
 
 unsigned long Solenoid::time_prev[SOL_SUB_NUM];
 int32_t Inc_enc::val_prev[INC_ENC_NUM];
+unsigned long Cubic::time_prev;
 
 
-void DC_motor::begin(){
+void DC_motor::begin(void){
     pinMode(SS_DC_MOTOR,OUTPUT);
     digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
     pinMode(SS_DC_MOTOR_MISO,OUTPUT);
@@ -26,7 +27,7 @@ void DC_motor::begin(){
     digitalWriteFast(Pin(SS_DC_MOTOR_SS_4),HIGH);
 }
 
-void DC_motor::put(uint8_t num, int16_t duty, uint16_t duty_max){
+void DC_motor::put(const uint8_t num, const int16_t duty, const uint16_t duty_max){
     // 想定外の入力が来たら何もしない
     if(duty_max > DUTY_SPI_MAX) return;
     if(abs(duty) > duty_max) return;
@@ -69,7 +70,7 @@ void DC_motor::send(void){
     SPI.endTransaction();
 }
 
-void DC_motor::print(bool new_line){
+void DC_motor::print(const bool new_line){
     for (int i = 0; i < DC_MOTOR_NUM+SOL_SUB_NUM; i++) {
         if (abs(buf[i]) == DUTY_SPI_MAX + 1 && i >= DC_MOTOR_NUM) {
             //Serial.print(Solenoid::get(i-DC_MOTOR_NUM));
@@ -93,7 +94,7 @@ void Solenoid::begin(void) {
     }
 }
 
-void Solenoid::put(uint8_t num, bool state) {
+void Solenoid::put(const uint8_t num, const bool state) {
     if (num >= SOL_SUB_NUM) return;
     if (DC_motor::buf[DC_MOTOR_NUM+num] == (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1))) return;
 
@@ -104,13 +105,13 @@ void Solenoid::put(uint8_t num, bool state) {
     time_prev[num] = time_now;
 }
 
-int8_t Solenoid::get(uint8_t num) {
+int8_t Solenoid::get(const uint8_t num) {
     if (num >= SOL_SUB_NUM) return -1;
     int16_t raw_val = DC_motor::buf[DC_MOTOR_NUM+num];
     return (abs(raw_val) == DUTY_SPI_MAX + 1 ? (raw_val < 0 ? 0 : 1) : -1);
 }
 
-void Solenoid::print(bool new_line) {
+void Solenoid::print(const bool new_line) {
     for (int i = 0; i < SOL_SUB_NUM; i++) {
         Serial.print(Solenoid::get(i));
         Serial.print(" ");
@@ -130,7 +131,7 @@ void Inc_enc::begin(void){
     digitalWriteFast(Pin(INC_ENC_RESET), HIGH);
 }
 
-int32_t Inc_enc::get(uint8_t num){
+int32_t Inc_enc::get(const uint8_t num){
     if(num >= INC_ENC_NUM) return 1;
 
     int32_t ret = 0;
@@ -141,7 +142,7 @@ int32_t Inc_enc::get(uint8_t num){
     return ret;
 }
 
-int16_t Inc_enc::get_diff(uint8_t num){
+int16_t Inc_enc::get_diff(const uint8_t num){
     if(num >= INC_ENC_NUM) return 1;
 
     return get(num) - val_prev[num];
@@ -172,7 +173,7 @@ void Inc_enc::reset(void){
     digitalWriteFast(Pin(INC_ENC_RESET), HIGH);
 }
 
-void Inc_enc::print(bool new_line){
+void Inc_enc::print(const bool new_line){
     for (int i = 0; i < INC_ENC_NUM; i++) {
         Serial.print(get(i));
         Serial.print(" ");
@@ -183,7 +184,7 @@ void Inc_enc::print(bool new_line){
         Serial.print(" ");
 }
 
-void Inc_enc::print_diff(bool new_line){
+void Inc_enc::print_diff(const bool new_line){
     for (int i = 0; i < INC_ENC_NUM; i++) {
         Serial.print(get_diff(i));
         Serial.print(" ");
@@ -200,7 +201,7 @@ void Abs_enc::begin(void){
     digitalWriteFast(Pin(SS_ABS_ENC), HIGH);
 }
 
-uint16_t Abs_enc::get(uint8_t num){
+uint16_t Abs_enc::get(const uint8_t num){
     if(num >= ABS_ENC_NUM) return ABS_ENC_ERR;
 
     uint16_t ret = 0;
@@ -220,7 +221,7 @@ uint16_t Abs_enc::get(uint8_t num){
     }
 }
 
-bool Abs_enc::parity_check(uint16_t enc_val) {
+bool Abs_enc::parity_check(const uint16_t enc_val) {
     bool bit[16];
     for (int i = 0; i < 16; i++) {
         bit[i] = (enc_val >> i) & 1;
@@ -233,7 +234,7 @@ bool Abs_enc::parity_check(uint16_t enc_val) {
     return false;
 }
 
-uint16_t Abs_enc::remove_parity_bit(uint16_t enc_val) {
+uint16_t Abs_enc::remove_parity_bit(const uint16_t enc_val) {
     return enc_val & 0x3fff;
 }
 
@@ -249,7 +250,7 @@ void Abs_enc::receive(void){
     SPI.endTransaction();
 }
 
-void Abs_enc::print(bool new_line) {
+void Abs_enc::print(const bool new_line) {
     for (int i = 0; i < ABS_ENC_NUM; i++) {
         Serial.print(get(i));
         Serial.print(" ");
@@ -269,20 +270,29 @@ void Cubic::begin(){
     digitalWriteFast(Pin(ENABLE_EX0), HIGH);
     pinMode(ENABLE_EX1, OUTPUT);
     digitalWriteFast(Pin(ENABLE_EX1), HIGH);
+
     // DCモータの初期化
     DC_motor::begin();
+
     // インクリメントエンコーダの初期化
     Inc_enc::begin();
+
     // アブソリュートエンコーダの初期化
     Abs_enc::begin();
+
     // ソレノイドの初期化
     Solenoid::begin();
+
     // SPI通信セットアップ
     SPI.begin();
     pinMode(MISO, INPUT_PULLUP);
+
     // ADCのSSの初期化
     pinMode(SS_ADC,OUTPUT);
     digitalWriteFast(Pin(SS_ADC),HIGH);
+
+    // ループ前の時刻を記録
+    time_prev = micros();
 
     Cubic::update();
     Cubic::update();
@@ -291,7 +301,15 @@ void Cubic::begin(){
 
 void Cubic::update(const unsigned int us) {
     DC_motor::send();
-    if(us > 0) delayMicroseconds(us);
+
+    unsigned long time_now = micros();
+    unsigned int dt;
+    if(time_now < time_prev) dt = time_now + MICROS_MAX - time_prev;
+    else                     dt = time_now - time_prev;
+    time_prev = time_now;
+
+    if(us > dt) delayMicroseconds((us - dt)*2); // なぜか2倍すると正しい周期になる
+
     Abs_enc::receive();
     Inc_enc::receive();
 }

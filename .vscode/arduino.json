@@ -1,4 +1,0 @@
-{
-    "board": "arduino:mbed_nano:nano33ble",
-    "sketch": "cubic_arduino\\cubic_arduino.ino"
-}
