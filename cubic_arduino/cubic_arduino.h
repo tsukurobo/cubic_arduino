@@ -198,7 +198,7 @@ class Cubic{
         static void begin(float current_limit = 2.0);
 
         // データの送受信をまとめて行う関数
-        static void update(unsigned int us = 3000);
+        static void update(unsigned int us = 4000);
     
     private:
         // 1つ前のループの時刻
