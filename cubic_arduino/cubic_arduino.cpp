@@ -45,6 +45,12 @@ void DC_motor::put(const uint8_t num, const int16_t duty, const uint16_t duty_ma
     buf[num] = (int16_t)((float)duty/(float)duty_max * (float)DUTY_SPI_MAX);
 }
 
+int16_t DC_motor::get(uint8_t num) {
+    if (num >= DC_MOTOR_NUM+SOL_SUB_NUM) return 0;
+
+    return buf[num];
+}
+
 void DC_motor::send(void){
     uint8_t *l_buf = (uint8_t*)buf;
     uint8_t sign_buf = 0;
@@ -112,7 +118,9 @@ int8_t Solenoid::get(const uint8_t num) {
 
 void Solenoid::print(const bool new_line) {
     for (int i = 0; i < SOL_SUB_NUM; i++) {
-        Serial.print(Solenoid::get(i));
+        int8_t val = get(i);
+        if (val == -1) Serial.print("MOT");
+        else           Serial.print(val);
         Serial.print(" ");
     }
     if (new_line == true)
@@ -251,7 +259,10 @@ void Abs_enc::receive(void){
 
 void Abs_enc::print(const bool new_line) {
     for (int i = 0; i < ABS_ENC_NUM; i++) {
-        Serial.print(get(i));
+        uint16_t val = get(i);
+        if      (val == ABS_ENC_ERR)        Serial.print("ARD_ERR");
+        else if (val == ABS_ENC_ERR_RP2040) Serial.print("RP2040_ERR");
+        else                                Serial.print(val);
         Serial.print(" ");
     }
     if (new_line == true)
