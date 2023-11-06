@@ -367,11 +367,11 @@ void Cubic::begin(const float current_limit){
 
 void Cubic::update(const unsigned int us) {
     // ここに電流値によるチェックを入れる
-    for(int i = 0; i < DC_MOTOR_NUM; i++) {
-        if(abs(Adc::get(i)) > _current_limit) {
-            DC_motor::put(i, 0);
-        }
-    }
+    // for(int i = 0; i < DC_MOTOR_NUM; i++) {
+    //     if(abs(Adc::get(i)) > _current_limit) {
+    //         DC_motor::put(i, 0);
+    //     }
+    // }
     DC_motor::send();
 
     unsigned long time_now = micros();
