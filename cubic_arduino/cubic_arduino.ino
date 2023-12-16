@@ -32,6 +32,7 @@ void setup() {
 }
 
 void loop() {
+  static bool stop_flag = false;
   // シリアル入力で動作モードを指定
   ///*
   if (Serial.available() > 0) {
@@ -52,24 +53,34 @@ void loop() {
     // インクリメントエンコーダの累積値をリセット
     else if (mode == 'r') {
       Inc_enc::reset();
+    } else {
+      stop_flag = true;
     }
   }
   //*/
 
-  // すべてのインクリメントエンコーダの累積値を表示
-  Inc_enc::print();
+  if (stop_flag) {
+    Serial.println("==========STOPPED==========");
+    for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++) {
+      DC_motor::put(i, 0);
+    }
+    stop_flag = false;
+  } else {
+    // すべてのインクリメントエンコーダの累積値を表示
+    Inc_enc::print();
 
-  // すべてのインクリメントエンコーダの差分値を表示
-  Inc_enc::print_diff();
+    // すべてのインクリメントエンコーダの差分値を表示
+    Inc_enc::print_diff();
 
-  // すべてのアブソリュートエンコーダの値を表示
-  Abs_enc::print();
+    // すべてのアブソリュートエンコーダの値を表示
+    Abs_enc::print();
 
-  // すべてのDCモータのDutyを表示
-  DC_motor::print();
+    // すべてのDCモータのDutyを表示
+    DC_motor::print();
 
-  // すべてのDCモータの電流値を表示
-  Adc::print(true);
+    // すべてのDCモータの電流値を表示
+    Adc::print(true);
+  }
 
   /*
   cnt++;
