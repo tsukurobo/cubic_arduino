@@ -22,77 +22,134 @@ long cnt = 0;
 unsigned long time_prev, time_now;
 float dt;
 
-void setup() {
-  // すべてのモータ，エンコーダの初期化
-  // 第1引数に最大許容電流を与える．
-  Cubic::begin(3.0);
-  Serial.begin(115200);
+void setup()
+{
+	// すべてのモータ，エンコーダの初期化
+	// 第1引数に最大許容電流を与える．
+	Cubic::begin(3.0);
+	Serial.begin(115200);
 
-  time_prev = micros();
+	time_prev = micros();
 }
 
-void loop() {
-  static bool stop_flag = false;
-  // シリアル入力で動作モードを指定
-  ///*
-  if (Serial.available() > 0) {
-    char mode = Serial.read();
+void loop()
+{
+	static bool stop_flag = false;
+	static bool solenoid_flag = false;
+	static uint8_t i = 0;
+	static int duty[12] = {0};
+	static unsigned long sol_start_time = 0;
 
-    // モータのDutyを指定（例："m1:100"）
-    if (mode == 'm') {
-      uint8_t i = Serial.readStringUntil(':').toInt();
-      int duty = Serial.readStringUntil('\n').toInt();
-      DC_motor::put(i, duty);
-    }
-    // ソレノイドの状態を指定（例："s2:0"）
-    else if (mode == 's') {
-      uint8_t i = Serial.readStringUntil(':').toInt();
-      bool state = Serial.readStringUntil('\n').toInt();
-      Solenoid::put(i, state);
-    }
-    // インクリメントエンコーダの累積値をリセット
-    else if (mode == 'r') {
-      Inc_enc::reset();
-    } else {
-      stop_flag = true;
-    }
-  }
-  //*/
+	// シリアル入力で動作モードを指定
+	///*
+	if (Serial.available() > 0)
+	{
+		char mode = Serial.read();
+		// duty値をセット
+		if (mode == 'm')
+		{
+			i = Serial.readStringUntil(':').toInt();
+			duty[i] = Serial.readStringUntil('\n').toInt();
+		}
+		// ローラ回転開始
+		else if (mode == 'r')
+		{
+			for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++)
+			{
+				DC_motor::put(i, duty[i]);
+			}
+			Serial.readStringUntil('\n');
+		}
+		// エアシリンダを伸ばして戻す
+		else if (mode == 's')
+		{
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			// Serial.println("==========Shoot==========");
+			solenoid_flag = true;
+			Serial.readStringUntil('\n');
+		}
+		else
+		{
+			stop_flag = true;
+		}
+	}
+	//*/
 
-  if (stop_flag) {
-    Serial.println("==========STOPPED==========");
-    for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++) {
-      DC_motor::put(i, 0);
-    }
-    stop_flag = false;
-  } else {
-    // すべてのインクリメントエンコーダの累積値を表示
-    Inc_enc::print();
+	// solenoid_flagがtrueなった時点でソレノイドをON状態にして、そこからdelay_time[ms]後にOFF状態にする
+	const unsigned long delay_time = 1000;
+	static bool while_delay = false;
+	static bool default_state;		  // OFFの状態
+	int num = 0;					  // ソレノイドの番号
+	static long last_toggle_time = 0; // ソレノイドのON/OFFを切り替えた時刻
+	unsigned long time_now = millis();
+	if (solenoid_flag)
+	{
+		if (!while_delay)
+		{ // 一度目の呼び出し
+			while_delay = true;
+			Serial.println(while_delay);
+			last_toggle_time = millis();
+			// この関数を呼び出した時点でのソレノイドの状態をOFF状態とする
+			default_state = Solenoid::get(num);
+			// ソレノイドをON状態にする
+			Solenoid::put(num, !default_state);
+		}
+		else
+		{
+			if (time_now - last_toggle_time < delay_time)
+				Serial.println("while delay...");
+			else
+			{
+				// delay_time[ms]後にソレノイドをOFF状態にする
+				Solenoid::put(num, default_state);
+				while_delay = false;
+				solenoid_flag = false;
+				Serial.println("end delay");
+			}
+		}
+	}
 
-    // すべてのインクリメントエンコーダの差分値を表示
-    Inc_enc::print_diff();
+	if (stop_flag)
+	{
+		Serial.println("==========STOPPED==========");
+		for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++)
+		{
+			DC_motor::put(i, 0);
+		}
+		stop_flag = false;
+	}
+	else
+	{
+		// 予約duty値を表示
+		for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++)
+		{
+			Serial.print(duty[i]);
+			Serial.print(", ");
+		}
 
-    // すべてのアブソリュートエンコーダの値を表示
-    Abs_enc::print();
+		// すべてのDCモータのDutyを表示
+		DC_motor::print();
 
-    // すべてのDCモータのDutyを表示
-    DC_motor::print();
+		// すべてのDCモータの電流値を表示
+		Adc::print(true);
+	}
 
-    // すべてのDCモータの電流値を表示
-    Adc::print(true);
-  }
+	/*
+	cnt++;
+	if (cnt == 1000) {
+	  time_now = micros();
+	  dt = (time_now - time_prev) / 1000.0;
+	  time_prev = time_now;
+	  cnt = 0;
+	  Serial.println(dt);
+	}
+	*/
 
-  /*
-  cnt++;
-  if (cnt == 1000) {
-    time_now = micros();
-    dt = (time_now - time_prev) / 1000.0;
-    time_prev = time_now;
-    cnt = 0;
-    Serial.println(dt);
-  }
-  */
-
-  // データの送受信を行う(デフォルトは4ms周期)
-  Cubic::update();
+	// データの送受信を行う(デフォルトは4ms周期)
+	Cubic::update();
 }
