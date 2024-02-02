@@ -19,20 +19,20 @@ float Cubic::_current_limit;
 
 
 void DC_motor::begin(void){
-    pinMode(SS_DC_MOTOR,OUTPUT);
-    digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
-    pinMode(SS_DC_MOTOR_MISO,OUTPUT);
-    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
+    pinMode(SS_MD,OUTPUT);
+    digitalWriteFast(Pin(SS_MD),HIGH);
+    pinMode(SS_MD_MISO,OUTPUT);
+    digitalWriteFast(Pin(SS_MD_MISO),HIGH);
 
     //マザーボード上のRP2040とモータドライバの各マイコン間でのSPI通信も可能
-    pinMode(SS_DC_MOTOR_SS_1,OUTPUT);
-    pinMode(SS_DC_MOTOR_SS_2,OUTPUT);
-    pinMode(SS_DC_MOTOR_SS_3,OUTPUT);
-    pinMode(SS_DC_MOTOR_SS_4,OUTPUT);
-    digitalWriteFast(Pin(SS_DC_MOTOR_SS_1),HIGH);
-    digitalWriteFast(Pin(SS_DC_MOTOR_SS_2),HIGH);
-    digitalWriteFast(Pin(SS_DC_MOTOR_SS_3),HIGH);
-    digitalWriteFast(Pin(SS_DC_MOTOR_SS_4),HIGH);
+    pinMode(SS_MD_SS_1,OUTPUT);
+    pinMode(SS_MD_SS_2,OUTPUT);
+    pinMode(SS_MD_SS_3,OUTPUT);
+    pinMode(SS_MD_SS_4,OUTPUT);
+    digitalWriteFast(Pin(SS_MD_SS_1),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_2),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_3),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_4),HIGH);
 }
 
 void DC_motor::put(const uint8_t num, const int16_t duty, const uint16_t duty_max){
@@ -57,20 +57,20 @@ void DC_motor::send(void){
     SPI.beginTransaction(Cubic_SPISettings);
 
     // 送信要求を受け取る
-    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),LOW);
-    digitalWriteFast(Pin(SS_DC_MOTOR),LOW);
+    digitalWriteFast(Pin(SS_MD_MISO),LOW);
+    digitalWriteFast(Pin(SS_MD),LOW);
     sign_buf = SPI.transfer(0x00);
-    digitalWriteFast(Pin(SS_DC_MOTOR_MISO),HIGH);
-    digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
+    digitalWriteFast(Pin(SS_MD_MISO),HIGH);
+    digitalWriteFast(Pin(SS_MD),HIGH);
     delayMicroseconds(1);
 
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
     if(sign_buf == 0xFF){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
-            //digitalWriteFast(Pin(SS_DC_MOTOR_MISO),LOW);
-            digitalWriteFast(Pin(SS_DC_MOTOR),LOW);
+            //digitalWriteFast(Pin(SS_MD_MISO),LOW);
+            digitalWriteFast(Pin(SS_MD),LOW);
             SPI.transfer(l_buf[i]);
-            digitalWriteFast(Pin(SS_DC_MOTOR),HIGH);
+            digitalWriteFast(Pin(SS_MD),HIGH);
         }
     }
     SPI.endTransaction();
@@ -331,10 +331,10 @@ void Cubic::begin(const float current_limit){
     // Cubicの動作開始
     pinMode(ENABLE,OUTPUT);
     digitalWriteFast(Pin(ENABLE),HIGH);
-    pinMode(ENABLE_EX0, OUTPUT);
-    digitalWriteFast(Pin(ENABLE_EX0), HIGH);
-    pinMode(ENABLE_EX1, OUTPUT);
-    digitalWriteFast(Pin(ENABLE_EX1), HIGH);
+    pinMode(ENABLE_MD_A, OUTPUT);
+    digitalWriteFast(Pin(ENABLE_MD_A), HIGH);
+    pinMode(ENABLE_MD_B, OUTPUT);
+    digitalWriteFast(Pin(ENABLE_MD_B), HIGH);
 
     // SPI通信セットアップ
     SPI.begin();
