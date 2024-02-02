@@ -19,20 +19,30 @@ float Cubic::_current_limit;
 
 
 void DC_motor::begin(void){
-    pinMode(SS_MD,OUTPUT);
-    digitalWriteFast(Pin(SS_MD),HIGH);
+    pinMode(SS_MD_A,OUTPUT);
+    pinMode(SS_MD_B,OUTPUT);
+    digitalWriteFast(Pin(SS_MD_A),HIGH);
+    digitalWriteFast(Pin(SS_MD_B),HIGH);
     pinMode(SS_MD_MISO,OUTPUT);
     digitalWriteFast(Pin(SS_MD_MISO),HIGH);
 
     //マザーボード上のRP2040とモータドライバの各マイコン間でのSPI通信も可能
-    pinMode(SS_MD_SS_1,OUTPUT);
-    pinMode(SS_MD_SS_2,OUTPUT);
-    pinMode(SS_MD_SS_3,OUTPUT);
-    pinMode(SS_MD_SS_4,OUTPUT);
-    digitalWriteFast(Pin(SS_MD_SS_1),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_2),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_3),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_4),HIGH);
+    pinMode(SS_MD_SS_A0,OUTPUT);
+    pinMode(SS_MD_SS_A1,OUTPUT);
+    pinMode(SS_MD_SS_A2,OUTPUT);
+    pinMode(SS_MD_SS_A3,OUTPUT);
+    pinMode(SS_MD_SS_B0,OUTPUT);
+    pinMode(SS_MD_SS_B1,OUTPUT);
+    pinMode(SS_MD_SS_B2,OUTPUT);
+    pinMode(SS_MD_SS_B3,OUTPUT);
+    digitalWriteFast(Pin(SS_MD_SS_A0),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_A1),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_A2),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_A3),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_B0),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_B1),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_B2),HIGH);
+    digitalWriteFast(Pin(SS_MD_SS_B3),HIGH);
 }
 
 void DC_motor::put(const uint8_t num, const int16_t duty, const uint16_t duty_max){
@@ -58,19 +68,23 @@ void DC_motor::send(void){
 
     // 送信要求を受け取る
     digitalWriteFast(Pin(SS_MD_MISO),LOW);
-    digitalWriteFast(Pin(SS_MD),LOW);
+    digitalWriteFast(Pin(SS_MD_A),LOW);
+    digitalWriteFast(Pin(SS_MD_B),LOW);
     sign_buf = SPI.transfer(0x00);
     digitalWriteFast(Pin(SS_MD_MISO),HIGH);
-    digitalWriteFast(Pin(SS_MD),HIGH);
+    digitalWriteFast(Pin(SS_MD_A),HIGH);
+    digitalWriteFast(Pin(SS_MD_B),HIGH);
     delayMicroseconds(1);
 
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
     if(sign_buf == 0xFF){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
             //digitalWriteFast(Pin(SS_MD_MISO),LOW);
-            digitalWriteFast(Pin(SS_MD),LOW);
+            digitalWriteFast(Pin(SS_MD_A),LOW);
+            digitalWriteFast(Pin(SS_MD_B),LOW);
             SPI.transfer(l_buf[i]);
-            digitalWriteFast(Pin(SS_MD),HIGH);
+            digitalWriteFast(Pin(SS_MD_A),HIGH);
+            digitalWriteFast(Pin(SS_MD_B),HIGH);
         }
     }
     SPI.endTransaction();
@@ -274,8 +288,10 @@ void Abs_enc::print(const bool new_line) {
 
 void Adc::begin(void) {
     // ADCのSSの初期化
-    pinMode(SS_ADC,OUTPUT);
-    digitalWriteFast(Pin(SS_ADC),HIGH);
+    pinMode(SS_ADC_A,OUTPUT);
+    pinMode(SS_ADC_B,OUTPUT);
+    digitalWriteFast(Pin(SS_ADC_A),HIGH);
+    digitalWriteFast(Pin(SS_ADC_B),HIGH);
     
     // バイアス項を求める
     const int vrfy_num = 10;
@@ -301,11 +317,13 @@ void Adc::receive(void) {
         byte channelDataH2 = (ch[i] >> 2) | 0x06;
         byte channelDataL2 = ch[i] << 6;
 
-        digitalWriteFast(Pin(SS_ADC), LOW);
+        digitalWriteFast(Pin(SS_ADC_A), LOW);
+        digitalWriteFast(Pin(SS_ADC_B), LOW);
         SPI.transfer(channelDataH2);                  // Start bit 1 + D2bit
         byte highByte = SPI.transfer(channelDataL2);  // singleEnd D1,D0 bit
         byte lowByte = SPI.transfer(0x00);            // dummy
-        digitalWriteFast(Pin(SS_ADC), HIGH);
+        digitalWriteFast(Pin(SS_ADC_A), HIGH);
+        digitalWriteFast(Pin(SS_ADC_B), HIGH);
 
         int data = ((highByte & 0x0f) << 8) | lowByte;
         float raw_val = (float)(data - CURRENT_RES)/CURRENT_RES * CURRENT_MAX + bias[i];

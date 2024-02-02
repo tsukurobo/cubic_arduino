@@ -7,22 +7,29 @@ using namespace nano33BLE_digitalWriteFast;
 
 // 各種ENABLEをHIGHにすることによって動作開始
 #define ENABLE 7
-#define ENABLE_MD_A 2
-#define ENABLE_MD_B 3
+#define ENABLE_MD_A 2 // A面のモータドライバのENABLE
+#define ENABLE_MD_B 3 // B面のモータドライバのENABLE
 
 // SPI通信に用いるピン
 #define MISO 12
 #define MOSI 11
 #define SCK 13 // シリアルクロック
-#define SS_MD 15  // モータドライバのSS(スレーブセレクト)
+#define SS_MD_A 15  // モータドライバのSS(スレーブセレクト)
+#define SS_MD_B 6
 #define SS_MD_MISO 2 //DCモーターで、スレーブからマスターへデータを送る時LOWにしないといけないピン
 #define SS_INC_ENC 20  // インクリメントエンコーダのSS
 #define SS_ABS_ENC 1    // アブソリュートエンコーダのSS
-#define SS_ADC 21       // ADCのSS
-#define SS_MD_SS_1 16 //マザーボードのRP2040をマスターとして各モータードライバ基盤に配置できるスレーブのSS
-#define SS_MD_SS_2 17
-#define SS_MD_SS_3 18
-#define SS_MD_SS_4 19
+#define SS_ADC_A 21       // ADCのSS
+#define SS_ADC_B 10
+//マザーボードのRP2040をマスターとして各モータードライバ基盤に配置できるスレーブのSS
+#define SS_MD_SS_A0 16
+#define SS_MD_SS_A1 17
+#define SS_MD_SS_A2 18
+#define SS_MD_SS_A3 19
+#define SS_MD_SS_B0 4
+#define SS_MD_SS_B1 5
+#define SS_MD_SS_B2 8
+#define SS_MD_SS_B3 9
 
 #define SPI_FREQ 4000000
 #define ADC_SPI_FREQ 1000000
