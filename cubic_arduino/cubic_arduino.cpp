@@ -356,7 +356,7 @@ void Cubic::begin(const float current_limit){
 
     // SPI通信セットアップ
     SPI.begin();
-    pinMode(MISO, INPUT_PULLUP);
+    pinMode(CubicPin::MISO, INPUT_PULLUP);
 
     // DCモータの初期化
     DC_motor::begin();

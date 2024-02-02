@@ -6,67 +6,70 @@
 using namespace nano33BLE_digitalWriteFast;
 
 // 各種ENABLEをHIGHにすることによって動作開始
-#define ENABLE 7
-#define ENABLE_MD_A 2 // A面のモータドライバのENABLE
-#define ENABLE_MD_B 3 // B面のモータドライバのENABLE
+constexpr int ENABLE = 7;
+constexpr int ENABLE_MD_A = 2; // A面のモータドライバのENABLE
+constexpr int ENABLE_MD_B = 3; // B面のモータドライバのENABLE
 
 // SPI通信に用いるピン
-#define MISO 12
-#define MOSI 11
-#define SCK 13 // シリアルクロック
-#define SS_MD_A 15  // モータドライバのSS(スレーブセレクト)
-#define SS_MD_B 6
-#define SS_MD_MISO 2 //DCモーターで、スレーブからマスターへデータを送る時LOWにしないといけないピン
-#define SS_INC_ENC 20  // インクリメントエンコーダのSS
-#define SS_ABS_ENC 1    // アブソリュートエンコーダのSS
-#define SS_ADC_A 21       // ADCのSS
-#define SS_ADC_B 10
+namespace CubicPin {
+	constexpr int MISO = 12;
+	constexpr int MOSI = 11;
+	constexpr int SCK = 13; // シリアルクロック
+}
+constexpr int SS_MD_A = 15;  // モータドライバのSS(スレーブセレクト)
+constexpr int SS_MD_B = 6;
+constexpr int SS_MD_MISO = 2; //DCモーターで、スレーブからマスターへデータを送る時LOWにしないといけないピン
+constexpr int SS_INC_ENC = 20;  // インクリメントエンコーダのSS
+constexpr int SS_ABS_ENC = 1;    // アブソリュートエンコーダのSS
+constexpr int SS_ADC_A = 21;       // ADCのSS
+constexpr int SS_ADC_B = 10;
 //マザーボードのRP2040をマスターとして各モータードライバ基盤に配置できるスレーブのSS
-#define SS_MD_SS_A0 16
-#define SS_MD_SS_A1 17
-#define SS_MD_SS_A2 18
-#define SS_MD_SS_A3 19
-#define SS_MD_SS_B0 4
-#define SS_MD_SS_B1 5
-#define SS_MD_SS_B2 8
-#define SS_MD_SS_B3 9
+constexpr int SS_MD_SS_A0 = 16;
+constexpr int SS_MD_SS_A1 = 17;
+constexpr int SS_MD_SS_A2 = 18;
+constexpr int SS_MD_SS_A3 = 19;
+constexpr int SS_MD_SS_B0 = 4;
+constexpr int SS_MD_SS_B1 = 5;
+constexpr int SS_MD_SS_B2 = 8;
+constexpr int SS_MD_SS_B3 = 9;
 
-#define SPI_FREQ 4000000
-#define ADC_SPI_FREQ 1000000
+
+constexpr int SPI_FREQ = 4000000;
+constexpr int ADC_SPI_FREQ = 1000000;
 
 // モータ，エンコーダの数
-#define DC_MOTOR_NUM 8
-#define INC_ENC_NUM 8
-#define ABS_ENC_NUM 8
-#define SOL_SUB_NUM 4 // ソレノイドとサブチャンネルDCモータの数
+constexpr int DC_MOTOR_NUM = 8;
+constexpr int INC_ENC_NUM = 8;
+constexpr int ABS_ENC_NUM = 8;
+constexpr int SOL_SUB_NUM = 4; // ソレノイドとサブチャンネルDCモータの数
 
 // 送受信するデータ1つ辺りのバイト数
-#define DC_MOTOR_BYTES 2
-#define INC_ENC_BYTES 4
-#define ABS_ENC_BYTES 2
+constexpr int DC_MOTOR_BYTES = 2;
+constexpr int INC_ENC_BYTES = 4;
+constexpr int ABS_ENC_BYTES = 2;
 
 // SPI通信におけるDCモータのDutyの最大値
-#define DUTY_SPI_MAX 32766
+constexpr int DUTY_SPI_MAX = 32766;
 
 // 電流センサの取り得る最大電流値
-#define CURRENT_MAX 30.0
+constexpr float CURRENT_MAX = 30.0;
 // 電流センサの分解能(-2048 ~ 2048)
-#define CURRENT_RES 2048
+constexpr float CURRENT_RES = 2048;
 
 // アブソリュートエンコーダの取り得る最大値
-#define ABS_ENC_MAX 16383
+constexpr float ABS_ENC_MAX = 16383;
 // RP2040でアブソリュートエンコーダが正しく読めなかったときに返す値
-#define ABS_ENC_ERR_RP2040 0x7fff
+constexpr int ABS_ENC_ERR_RP2040 = 0x7fff;
 // Arduinoでアブソリュートエンコーダが正しく読めなかったときに返す値
-#define ABS_ENC_ERR 0xffff
+constexpr int ABS_ENC_ERR = 0xffff;
 
 // インクリメントエンコーダのRP2040のリセットピン(LOW:reset HIGH:start)
-#define INC_ENC_RESET 0
+constexpr int INC_ENC_RESET = 0;
 
 // ソレノイドの出力を切り替える最小時間(ms)
-#define SOL_TIME_MIN 10
+constexpr float SOL_TIME_MIN = 10.0;
 // micros()で測れる最大時間
-#define MICROS_MAX 0xffffffff
+constexpr int MICROS_MAX = 0xffffffff;
 
 class DC_motor {
     public:
