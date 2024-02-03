@@ -6,11 +6,14 @@ SPISettings ADC_SPISettings = SPISettings(ADC_SPI_FREQ, MSBFIRST, SPI_MODE0);
 const uint8_t Adc::ch[DC_MOTOR_NUM] = {7, 5, 6, 4, 3, 2, 0, 1};
 
 int16_t DC_motor::buf[DC_MOTOR_NUM+SOL_SUB_NUM];
+int16_t DC_motor::buf_B[DC_MOTOR_NUM+SOL_SUB_NUM];
 uint8_t Inc_enc::buf[INC_ENC_NUM*INC_ENC_BYTES];
 uint8_t Abs_enc::buf[ABS_ENC_NUM*ABS_ENC_BYTES];
 float Adc::buf[DC_MOTOR_NUM];
 
-unsigned long Solenoid::time_prev[SOL_SUB_NUM];
+bool DC_motor::_use_B = false;
+bool Solenoid::_use_B = false;
+unsigned long Solenoid::time_prev[SOL_SUB_NUM*2];
 int32_t Inc_enc::val_prev[INC_ENC_NUM];
 unsigned long Cubic::time_prev;
 float Adc::bias[DC_MOTOR_NUM];
@@ -18,11 +21,14 @@ float Adc::buf_prev[DC_MOTOR_NUM];
 float Cubic::_current_limit;
 
 
-void DC_motor::begin(void){
+void DC_motor::begin(bool use_B){
+	_use_B = use_B;
     pinMode(SS_MD_A,OUTPUT);
-    pinMode(SS_MD_B,OUTPUT);
     digitalWriteFast(Pin(SS_MD_A),HIGH);
-    digitalWriteFast(Pin(SS_MD_B),HIGH);
+	if(_use_B){
+		pinMode(SS_MD_B,OUTPUT);
+		digitalWriteFast(Pin(SS_MD_B),HIGH);
+	}
     pinMode(SS_MD_MISO,OUTPUT);
     digitalWriteFast(Pin(SS_MD_MISO),HIGH);
 
@@ -31,34 +37,38 @@ void DC_motor::begin(void){
     pinMode(SS_MD_SS_A1,OUTPUT);
     pinMode(SS_MD_SS_A2,OUTPUT);
     pinMode(SS_MD_SS_A3,OUTPUT);
-    pinMode(SS_MD_SS_B0,OUTPUT);
-    pinMode(SS_MD_SS_B1,OUTPUT);
-    pinMode(SS_MD_SS_B2,OUTPUT);
-    pinMode(SS_MD_SS_B3,OUTPUT);
     digitalWriteFast(Pin(SS_MD_SS_A0),HIGH);
     digitalWriteFast(Pin(SS_MD_SS_A1),HIGH);
     digitalWriteFast(Pin(SS_MD_SS_A2),HIGH);
     digitalWriteFast(Pin(SS_MD_SS_A3),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_B0),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_B1),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_B2),HIGH);
-    digitalWriteFast(Pin(SS_MD_SS_B3),HIGH);
+	if(_use_B){
+		pinMode(SS_MD_SS_B0,OUTPUT);
+		pinMode(SS_MD_SS_B1,OUTPUT);
+		pinMode(SS_MD_SS_B2,OUTPUT);
+		pinMode(SS_MD_SS_B3,OUTPUT);
+		digitalWriteFast(Pin(SS_MD_SS_B0),HIGH);
+		digitalWriteFast(Pin(SS_MD_SS_B1),HIGH);
+		digitalWriteFast(Pin(SS_MD_SS_B2),HIGH);
+		digitalWriteFast(Pin(SS_MD_SS_B3),HIGH);
+	}
 }
 
 void DC_motor::put(const uint8_t num, const int16_t duty, const uint16_t duty_max){
     // 想定外の入力が来たら何もしない
     if(duty_max > DUTY_SPI_MAX) return;
     if(abs(duty) > duty_max) return;
-    if(num >= DC_MOTOR_NUM + SOL_SUB_NUM) return;
+	if(num >= (DC_MOTOR_NUM + SOL_SUB_NUM) * (_use_B ? 2:1)) return;
 
     // duty値を代入
-    buf[num] = (int16_t)((float)duty/(float)duty_max * (float)DUTY_SPI_MAX);
+	if(num < DC_MOTOR_NUM + SOL_SUB_NUM) buf[num] = (int16_t)((float)duty/(float)duty_max * (float)DUTY_SPI_MAX);
+	else buf_B[num - DC_MOTOR_NUM - SOL_SUB_NUM] = (int16_t)((float)duty/(float)duty_max * (float)DUTY_SPI_MAX);
 }
 
 int16_t DC_motor::get(uint8_t num) {
-    if (num >= DC_MOTOR_NUM+SOL_SUB_NUM) return 0;
+	if(num >= (DC_MOTOR_NUM + SOL_SUB_NUM) * (_use_B ? 2:1)) return -1;
 
-    return buf[num];
+    if(num < DC_MOTOR_NUM + SOL_SUB_NUM) return buf[num];
+	else return buf_B[num - DC_MOTOR_NUM - SOL_SUB_NUM];
 }
 
 void DC_motor::send(void){
@@ -66,14 +76,12 @@ void DC_motor::send(void){
     uint8_t sign_buf = 0;
     SPI.beginTransaction(Cubic_SPISettings);
 
-    // 送信要求を受け取る
+    // A面の送信要求を受け取る
     digitalWriteFast(Pin(SS_MD_MISO),LOW);
     digitalWriteFast(Pin(SS_MD_A),LOW);
-    digitalWriteFast(Pin(SS_MD_B),LOW);
     sign_buf = SPI.transfer(0x00);
     digitalWriteFast(Pin(SS_MD_MISO),HIGH);
     digitalWriteFast(Pin(SS_MD_A),HIGH);
-    digitalWriteFast(Pin(SS_MD_B),HIGH);
     delayMicroseconds(1);
 
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
@@ -81,9 +89,27 @@ void DC_motor::send(void){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
             //digitalWriteFast(Pin(SS_MD_MISO),LOW);
             digitalWriteFast(Pin(SS_MD_A),LOW);
-            digitalWriteFast(Pin(SS_MD_B),LOW);
             SPI.transfer(l_buf[i]);
             digitalWriteFast(Pin(SS_MD_A),HIGH);
+        }
+    }
+    SPI.endTransaction();
+
+	// B面を使わない場合はここで終了
+	if(!_use_B) return;
+	l_buf = (uint8_t*)buf_B;
+  sign_buf = 0;
+    SPI.beginTransaction(Cubic_SPISettings);
+    digitalWriteFast(Pin(ENABLE_MD_B),LOW);
+    digitalWriteFast(Pin(SS_MD_B),LOW);
+    sign_buf = SPI.transfer(0x00);
+    digitalWriteFast(Pin(ENABLE_MD_B),HIGH);
+    digitalWriteFast(Pin(SS_MD_B),HIGH);
+    delayMicroseconds(1);
+	if(sign_buf == 0xFF){
+        for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
+            digitalWriteFast(Pin(SS_MD_B),LOW);
+            SPI.transfer(l_buf[i]);
             digitalWriteFast(Pin(SS_MD_B),HIGH);
         }
     }
@@ -100,6 +126,19 @@ void DC_motor::print(const bool new_line){
         }
         Serial.print(" ");
     }
+	// B面を使わない場合はB面のデータを出力しない
+	if(_use_B){
+    Serial.print("B-side: ");
+		for (int i = 0; i < DC_MOTOR_NUM+SOL_SUB_NUM; i++) {
+			if (abs(buf_B[i]) == DUTY_SPI_MAX + 1 && i >= DC_MOTOR_NUM) {
+				Serial.print("SOL");
+			}
+			else {
+				Serial.print(buf_B[i]);
+			}
+			Serial.print(" ");
+		}
+	}
     if (new_line == true)
         Serial.println();
     else
@@ -107,31 +146,48 @@ void DC_motor::print(const bool new_line){
 }
 
 
-void Solenoid::begin(void) {
-    for (int i = 0; i < SOL_SUB_NUM; i++) {
+void Solenoid::begin(bool use_B) {
+	_use_B = use_B;
+    for (int i = 0; i < SOL_SUB_NUM*2; i++) {
         time_prev[i] = millis();
     }
 }
 
 void Solenoid::put(const uint8_t num, const bool state) {
-    if (num >= SOL_SUB_NUM) return;
-    if (DC_motor::buf[DC_MOTOR_NUM+num] == (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1))) return;
+    if (num >= SOL_SUB_NUM * (_use_B ? 2:1)) return;
+	if (num < SOL_SUB_NUM) {
+		if (DC_motor::buf[DC_MOTOR_NUM + num] == (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1))) return;
+    
+		unsigned long time_now = millis();
+		if (time_now - time_prev[num] < SOL_TIME_MIN) return;
 
-    unsigned long time_now = millis();
-    if (time_now - time_prev[num] < SOL_TIME_MIN) return;
+		DC_motor::buf[DC_MOTOR_NUM+num] = (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1));
+	  	time_prev[num] = time_now;
+	} else {
+		if (DC_motor::buf_B[DC_MOTOR_NUM + num - SOL_SUB_NUM] == (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1))) return;
+		
+		unsigned long time_now = millis();
+		if (time_now - time_prev[num] < SOL_TIME_MIN) return;
 
-    DC_motor::buf[DC_MOTOR_NUM+num] = (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1));
-    time_prev[num] = time_now;
+		DC_motor::buf_B[DC_MOTOR_NUM + num - SOL_SUB_NUM] = (state ? DUTY_SPI_MAX + 1 : -(DUTY_SPI_MAX + 1));
+	  	time_prev[num] = time_now;
+	}
 }
 
 int8_t Solenoid::get(const uint8_t num) {
-    if (num >= SOL_SUB_NUM) return -1;
-    int16_t raw_val = DC_motor::buf[DC_MOTOR_NUM+num];
+    if (num >= SOL_SUB_NUM * (_use_B ? 2:1)) return -1;
+	int16_t raw_val;
+	if (_use_B) {
+		raw_val = DC_motor::buf[DC_MOTOR_NUM+num];
+	}else{
+
+		raw_val = DC_motor::buf_B[DC_MOTOR_NUM+num-SOL_SUB_NUM];
+	}
     return (abs(raw_val) == DUTY_SPI_MAX + 1 ? (raw_val < 0 ? 0 : 1) : -1);
 }
 
 void Solenoid::print(const bool new_line) {
-    for (int i = 0; i < SOL_SUB_NUM; i++) {
+    for (int i = 0; i < SOL_SUB_NUM*(_use_B ? 2:1); i++) {
         int8_t val = get(i);
         if (val == -1) Serial.print("MOT");
         else           Serial.print(val);
@@ -345,7 +401,7 @@ void Adc::print(const bool new_line){
 }
 
 
-void Cubic::begin(const float current_limit){
+void Cubic::begin(const bool use_B, const float current_limit){
     // Cubicの動作開始
     pinMode(ENABLE,OUTPUT);
     digitalWriteFast(Pin(ENABLE),HIGH);
@@ -359,10 +415,10 @@ void Cubic::begin(const float current_limit){
     pinMode(CubicPin::MISO, INPUT_PULLUP);
 
     // DCモータの初期化
-    DC_motor::begin();
+    DC_motor::begin(use_B);
 
     // ソレノイドの初期化
-    Solenoid::begin();
+    Solenoid::begin(use_B);
 
     // インクリメントエンコーダの初期化
     Inc_enc::begin();

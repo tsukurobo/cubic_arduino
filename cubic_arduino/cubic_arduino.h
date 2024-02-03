@@ -73,11 +73,18 @@ constexpr int MICROS_MAX = 0xffffffff;
 
 class DC_motor {
     public:
-        // 初期化する関数
-        static void begin(void);
+        /**
+		 * 初期化する関数
+		 * @param use_B モータドライバB面を使うかどうか
+		 */
+        static void begin(bool use_B = false);
 
-        // 指定したモータのDutyを格納する関数
-        // 第1引数：モータ番号0~11，第2引数：duty，第3引数：最大duty
+        /**
+		 * 指定したモータのDutyを格納する関数
+		 * @param num モータ番号0~11
+		 * @param duty デューティ比
+		 * @param duty_max 最大デューティ比
+		 */
         static void put(uint8_t num, int16_t duty, uint16_t duty_max = 1000);
 
         // 指定したモータのDutyを取得する関数
@@ -94,12 +101,20 @@ class DC_motor {
         // RP2040への送信データを格納する配列
         // ソレノイドを使用する場合も後ろ4つの要素を使用する
         static int16_t buf[DC_MOTOR_NUM+SOL_SUB_NUM];
+        static int16_t buf_B[DC_MOTOR_NUM+SOL_SUB_NUM];
+
+	private:
+		// B面のモータドライバを使うかどうか
+		static bool _use_B;
 };
 
 class Solenoid {
     public:
-        // 初期化する関数
-        static void begin(void);
+        /**
+		 * 初期化する関数
+		 * @param use_B モータドライバB面を使うかどうか
+		*/
+        static void begin(bool use_B = false);
 
         // 指定したソレノイドの状態を格納する関数
         // 第1引数：ソレノイド番号0~3，第2引数：状態
@@ -113,7 +128,10 @@ class Solenoid {
 
     private:
         // 状態を変更した時刻を保存する配列
-        static unsigned long time_prev[SOL_SUB_NUM];
+        static unsigned long time_prev[SOL_SUB_NUM*2];
+
+		// B面のモータドライバを使うかどうか
+		static bool _use_B;
 };
 
 class Inc_enc{
@@ -208,8 +226,12 @@ class Adc {
 
 class Cubic{
     public:
-        // すべてのモータ，エンコーダの初期化をする関数
-        static void begin(float current_limit = 2.0);
+        /**
+		 * すべてのモータ，エンコーダの初期化をする関数
+		 * @param use_B モータドライバB面を使うかどうか
+		 * @param current_limit モータを止める電流の閾値
+		 */
+        static void begin(bool use_B = false, float current_limit = 2.0);
 
         // データの送受信をまとめて行う関数
         static void update(unsigned int us = 4000);
