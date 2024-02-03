@@ -24,8 +24,8 @@ float dt;
 
 void setup() {
   // すべてのモータ，エンコーダの初期化
-  // 第1引数に最大許容電流を与える．
-  Cubic::begin(3.0);
+  // 第1引数にB面を使用するかどうか、第2引数に最大許容電流を与える．
+  Cubic::begin(1, 3.0);
   Serial.begin(115200);
 
   time_prev = micros();
@@ -38,13 +38,13 @@ void loop() {
   if (Serial.available() > 0) {
     char mode = Serial.read();
 
-    // モータのDutyを指定（例："m1:100"）
+    // モータのDutyを指定（例："m1:100", B面のモータ番号は12~23）
     if (mode == 'm') {
       uint8_t i = Serial.readStringUntil(':').toInt();
       int duty = Serial.readStringUntil('\n').toInt();
       DC_motor::put(i, duty);
     }
-    // ソレノイドの状態を指定（例："s2:0"）
+    // ソレノイドの状態を指定（例："s2:0", B面のソレノイド番号は4~7）
     else if (mode == 's') {
       uint8_t i = Serial.readStringUntil(':').toInt();
       bool state = Serial.readStringUntil('\n').toInt();
@@ -61,7 +61,7 @@ void loop() {
 
   if (stop_flag) {
     Serial.println("==========STOPPED==========");
-    for (int i = 0; i < DC_MOTOR_NUM + SOL_SUB_NUM; i++) {
+    for (int i = 0; i < (DC_MOTOR_NUM + SOL_SUB_NUM)*2; i++) {
       DC_motor::put(i, 0);
     }
     stop_flag = false;
