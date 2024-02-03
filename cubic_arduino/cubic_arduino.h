@@ -99,9 +99,9 @@ class DC_motor {
         static void print(bool new_line = false);
 
         // RP2040への送信データを格納する配列
-        // ソレノイドを使用する場合も後ろ4つの要素を使用する
-        static int16_t buf[DC_MOTOR_NUM+SOL_SUB_NUM];
-        static int16_t buf_B[DC_MOTOR_NUM+SOL_SUB_NUM];
+		// 前半12個の要素がA面のデータ、後半12個の要素がB面のデータ
+        // ソレノイドを使用する場合は各面のデータの後ろ4つの要素を使用する
+        static int16_t buf[(DC_MOTOR_NUM+SOL_SUB_NUM)*2];
 
 	private:
 		// B面のモータドライバを使うかどうか
