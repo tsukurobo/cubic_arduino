@@ -74,17 +74,16 @@ void DC_motor::send(void){
     SPI.beginTransaction(Cubic_SPISettings);
 
     // A面の送信要求を受け取る
-    digitalWriteFast(Pin(SS_MD_MISO),LOW);
+    digitalWriteFast(Pin(ENABLE_MD_A),LOW);
     digitalWriteFast(Pin(SS_MD_A),LOW);
     sign_buf = SPI.transfer(0x00);
-    digitalWriteFast(Pin(SS_MD_MISO),HIGH);
+    digitalWriteFast(Pin(ENABLE_MD_A),HIGH);
     digitalWriteFast(Pin(SS_MD_A),HIGH);
     delayMicroseconds(1);
 
     // 送信要求データ（2進数で"11111111"）だったならデータを送信***スレーブからマスターへのデータ送信はデータが破損（？）するのでそれに対する応急処置。要修正***
     if(sign_buf == 0xFF){
         for (int i = 0; i < (DC_MOTOR_NUM+SOL_SUB_NUM)*DC_MOTOR_BYTES; i++) {
-            //digitalWriteFast(Pin(SS_MD_MISO),LOW);
             digitalWriteFast(Pin(SS_MD_A),LOW);
             SPI.transfer(l_buf[i]);
             digitalWriteFast(Pin(SS_MD_A),HIGH);

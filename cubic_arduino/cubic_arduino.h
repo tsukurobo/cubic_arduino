@@ -7,8 +7,8 @@ using namespace nano33BLE_digitalWriteFast;
 
 // 各種ENABLEをHIGHにすることによって動作開始
 constexpr int ENABLE = 7;
-constexpr int ENABLE_MD_A = 2; // A面のモータドライバのENABLE
-constexpr int ENABLE_MD_B = 3; // B面のモータドライバのENABLE
+constexpr int ENABLE_MD_A = 2; // A面のモータドライバのENABLE、スレーブからマスターへデータを送る時LOWにしないといけないピン
+constexpr int ENABLE_MD_B = 3; // B面のモータドライバのENABLE、スレーブからマスターへデータを送る時LOWにしないといけないピン
 
 // SPI通信に用いるピン
 namespace CubicPin {
@@ -18,7 +18,6 @@ namespace CubicPin {
 }
 constexpr int SS_MD_A = 15;  // モータドライバのSS(スレーブセレクト)
 constexpr int SS_MD_B = 6;
-constexpr int SS_MD_MISO = 2; //DCモーターで、スレーブからマスターへデータを送る時LOWにしないといけないピン
 constexpr int SS_INC_ENC = 20;  // インクリメントエンコーダのSS
 constexpr int SS_ABS_ENC = 1;    // アブソリュートエンコーダのSS
 constexpr int SS_ADC_A = 21;       // ADCのSS
