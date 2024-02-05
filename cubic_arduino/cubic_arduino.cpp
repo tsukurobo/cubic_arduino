@@ -24,12 +24,14 @@ void DC_motor::begin(bool use_B){
 	_use_B = use_B;
     pinMode(SS_MD_A,OUTPUT);
     digitalWriteFast(Pin(SS_MD_A),HIGH);
+    pinMode(ENABLE_MD_A,OUTPUT);
+    digitalWriteFast(Pin(ENABLE_MD_A),HIGH);
 	if(_use_B){
 		pinMode(SS_MD_B,OUTPUT);
 		digitalWriteFast(Pin(SS_MD_B),HIGH);
+    		pinMode(ENABLE_MD_B,OUTPUT);
+    		digitalWriteFast(Pin(ENABLE_MD_B),HIGH);
 	}
-    pinMode(SS_MD_MISO,OUTPUT);
-    digitalWriteFast(Pin(SS_MD_MISO),HIGH);
 
     //マザーボード上のRP2040とモータドライバの各マイコン間でのSPI通信も可能
     pinMode(SS_MD_SS_A0,OUTPUT);
