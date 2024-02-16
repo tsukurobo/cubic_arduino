@@ -6,7 +6,7 @@ SPISettings ADC_SPISettings = SPISettings(ADC_SPI_FREQ, MSBFIRST, SPI_MODE0);
 const uint8_t Adc::ch[DC_MOTOR_NUM] = {7, 5, 6, 4, 3, 2, 0, 1};
 
 int16_t DC_motor::buf[(DC_MOTOR_NUM+SOL_SUB_NUM)*2];
-uint8_t Inc_enc::buf[INC_ENC_NUM*INC_ENC_BYTES];
+uint8_t Inc_enc::buf[INC_ENC_NUM*INC_ENC_BYTES*2];
 uint8_t Abs_enc::buf[ABS_ENC_NUM*ABS_ENC_BYTES];
 float Adc::buf[DC_MOTOR_NUM];
 
@@ -181,7 +181,7 @@ void Inc_enc::begin(void){
 }
 
 int32_t Inc_enc::get(const uint8_t num){
-    if(num >= INC_ENC_NUM) return 1;
+    if(num >= INC_ENC_NUM*2) return 1;
 
     int32_t ret = 0;
     ret |= buf[num*INC_ENC_BYTES];
@@ -208,7 +208,7 @@ void Inc_enc::receive(void){
 
     SPI.beginTransaction(Cubic_SPISettings);
     // データを受信
-    for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES; i++) {
+    for (int i = 0; i < INC_ENC_NUM*INC_ENC_BYTES*2; i++) {
         digitalWriteFast(Pin(SS_INC_ENC),LOW);
         buf[i] = SPI.transfer(0x88);
         digitalWriteFast(Pin(SS_INC_ENC),HIGH);
@@ -223,7 +223,7 @@ void Inc_enc::reset(void){
 }
 
 void Inc_enc::print(const bool new_line){
-    for (int i = 0; i < INC_ENC_NUM; i++) {
+    for (int i = 0; i < INC_ENC_NUM*2; i++) {
         Serial.print(get(i));
         Serial.print(" ");
     }

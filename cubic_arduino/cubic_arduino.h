@@ -160,7 +160,7 @@ class Inc_enc{
 
     private:
         // RP2040からの受信データを格納する配列
-        static uint8_t buf[INC_ENC_NUM*INC_ENC_BYTES];
+        static uint8_t buf[INC_ENC_NUM*INC_ENC_BYTES*2];
 
         // 1つ前の値を格納する配列
         static int32_t val_prev[INC_ENC_NUM];
